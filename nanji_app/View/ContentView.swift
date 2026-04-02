@@ -1,25 +1,2 @@
-//
-//  ContentView.swift
-//  nanji_app
-//
-//  Created by electrozone on 4/2/26.
-//
+// ContentView removed: not used by the app.
 
-import SwiftUI
-
-struct ContentView: View {
-    var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
-            Text("Hello, world2")
-        }
-        .padding()
-    }
-}
-
-#Preview {
-    ContentView()
-}

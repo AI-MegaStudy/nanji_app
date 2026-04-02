@@ -1,8 +1,2 @@
-//
-//  prediction.swift
-//  nanji_app
-//
-//  Created by electrozone on 4/2/26.
-//
+// Deprecated: Duplicate of `PredictionResponse` defined in currentAPI.swift. This file is intentionally left blank.
 
-import Foundation
