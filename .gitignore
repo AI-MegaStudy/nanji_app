@@ -1,62 +1,193 @@
-# Xcode
-#
-# gitignore contributors: remember to update Global/Xcode.gitignore, Objective-C.gitignore & Swift.gitignore
+############################################################
+# Miscellaneous / Common
+############################################################
+*.class
+*.lock
+*.log
+*.swp
+*.pyc
+*.tmp
+.DS_Store
 
-## User settings
-xcuserdata/
+############################################################
+# VS Code / Editor / Local history / AI Coding Tools
+############################################################
+.idea/
+.vscode/
+*.iml
+**/.history/
+**/*history/
 
-## Obj-C/Swift specific
-*.hmap
+# AI Coding Tools
+.cursor/
+.antigravity/
+.ag/
+.codex/
+.kiro/
 
-## App packaging
-*.ipa
-*.dSYM.zip
-*.dSYM
+############################################################
+# Node.js
+############################################################
+node_modules/
+package-lock.json
 
-## Playgrounds
-timeline.xctimeline
-playground.xcworkspace
+############################################################
+# Flutter / Dart / Pub
+############################################################
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.packages.generated
+.pub/
+.pub-preload-cache/
+build/
+coverage/
+flutter_*.png
+linked_*.ds
+unlinked.ds
+unlinked_spec.ds
+**/doc/api/
+**/generated_plugin_registrant.dart
 
-# Swift Package Manager
-#
-# Add this line if you want to avoid checking in source code from Swift Package Manager dependencies.
-# Packages/
-# Package.pins
-# Package.resolved
-# *.xcodeproj
-#
-# Xcode automatically generates this directory with a .xcworkspacedata file and xcuserdata
-# hence it is not needed unless you have added a package configuration file to your project
-# .swiftpm
+############################################################
+# Flutter SDK / Repo specific (from official flutter.gitignore)
+############################################################
+/bin/cache/
+/bin/internal/bootstrap.bat
+/bin/internal/bootstrap.sh
+/bin/mingit/
+/dev/benchmarks/mega_gallery/
+/dev/bots/.recipe_deps
+/dev/bots/android_tools/
+/dev/devicelab/ABresults*.json
+/dev/docs/doc/
+/dev/docs/flutter.docs.zip
+/dev/docs/lib/
+/dev/docs/pubspec.yaml
+/dev/integration_tests/**/xcuserdata
+/dev/integration_tests/**/Pods
+/packages/flutter/coverage/
+version
+analysis_benchmark.json
 
-.build/
+############################################################
+# Android
+############################################################
+.gradle/
+**/android/**/gradle-wrapper.jar
+**/android/captures/
+**/android/gradlew
+**/android/gradlew.bat
+**/android/local.properties
+**/android/**/GeneratedPluginRegistrant.java
+**/android/key.properties
+*.jks
 
-# CocoaPods
-#
-# We recommend against adding the Pods directory to your .gitignore. However
-# you should judge for yourself, the pros and cons are mentioned at:
-# https://guides.cocoapods.org/using/using-cocoapods.html#should-i-check-the-pods-directory-into-source-control
-#
-# Pods/
-#
-# Add this line if you want to avoid checking in source code from the Xcode workspace
-# *.xcworkspace
+############################################################
+# iOS / macOS
+############################################################
+**/ios/**/*.mode1v3
+**/ios/**/*.mode2v3
+**/ios/**/*.moved-aside
+**/ios/**/*.pbxuser
+**/ios/**/*.perspectivev3
+**/ios/**/*sync/
+**/ios/**/.sconsign.dblite
+**/ios/**/.tags*
+**/ios/**/.vagrant/
+**/ios/**/DerivedData/
+**/ios/**/Icon?
+**/ios/**/Pods/
+**/ios/**/.symlinks/
+**/ios/**/profile
+**/ios/**/xcuserdata
+**/ios/.generated/
+**/ios/Flutter/.last_build_id
+**/ios/Flutter/App.framework
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Flutter.podspec
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/ephemeral
+**/ios/Flutter/app.flx
+**/ios/Flutter/app.zip
+**/ios/Flutter/flutter_assets/
+**/ios/Flutter/flutter_export_environment.sh
+**/ios/ServiceDefinitions.json
+**/ios/Runner/GeneratedPluginRegistrant.*
 
-# Carthage
-#
-# Add this line if you want to avoid checking in source code from Carthage dependencies.
-# Carthage/Checkouts
+**/macos/Flutter/GeneratedPluginRegistrant.swift
+**/macos/Flutter/ephemeral
+**/Pods/
+**/xcuserdata/
 
-Carthage/Build/
+############################################################
+# Windows
+############################################################
+**/windows/flutter/generated_plugin_registrant.cc
+**/windows/flutter/generated_plugin_registrant.h
+**/windows/flutter/generated_plugins.cmake
 
-# fastlane
-#
-# It is recommended to not store the screenshots in the git repo.
-# Instead, use fastlane to re-generate the screenshots whenever they are needed.
-# For more information about the recommended setup visit:
-# https://docs.fastlane.tools/best-practices/source-control/#source-control
+############################################################
+# Linux
+############################################################
+**/linux/flutter/generated_plugin_registrant.cc
+**/linux/flutter/generated_plugin_registrant.h
+**/linux/flutter/generated_plugins.cmake
 
-fastlane/report.xml
-fastlane/Preview.html
-fastlane/screenshots/**/*.png
-fastlane/test_output
+############################################################
+# Python / FastAPI
+############################################################
+# Virtual environments (ANYWHERE)
+**/venv/
+**/.venv/
+**/*venv*/
+
+# Python cache / test / tool artifacts
+**/__pycache__/
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+**/.coverage
+**/htmlcov/
+
+# Environment files
+**/.env
+**/.env.*
+
+# Firebase 서비스 계정 키 (절대 커밋하지 않음!)
+**/serviceAccountKey.json
+**/*serviceAccountKey*.json
+
+############################################################
+# Database / Local data (optional but safe)
+############################################################
+**/*.sqlite3
+**/*.db
+**/*.dump
+**/*.sql~
+
+############################################################
+# Symbols / Debug
+############################################################
+app.*.symbols
+
+############################################################
+# Obfuscation
+############################################################
+app.*.map.json
+
+############################################################
+# Exceptions (keep defaults from flutter.gitignore)
+############################################################
+!**/ios/**/default.mode1v3
+!**/ios/**/default.mode2v3
+!**/ios/**/default.pbxuser
+!**/ios/**/default.perspectivev3
+!/packages/flutter_tools/test/data/dart_dependencies_test/**/.packages
+!/dev/ci/**/Gemfile.lock
+
+############################################################
+# ADD
+############################################################
+AGENT.md
