@@ -2,326 +2,267 @@ import SwiftUI
 
 struct HomeView: View {
     @StateObject private var vm = ParkingViewModel()
-    
+
     var body: some View {
         NavigationStack {
-            ZStack {
-                backgroundView
-                
+            VStack(spacing: 0) {
+                topBar
+
                 ScrollView(showsIndicators: false) {
-                    VStack(spacing: 24) {
-                        headerSection
+                    VStack(spacing: 16) {
                         mainStatusCard
-                        quickInfoSection
+                        futureSection
                         actionSection
-                        footerSection
+                        favoriteSection
                     }
                     .padding(.horizontal, 20)
                     .padding(.top, 16)
-                    .padding(.bottom, 32)
+                    .padding(.bottom, 30)
+                    .frame(maxWidth: .infinity)
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color(.systemGroupedBackground))
             }
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .principal) {
-                    Text("Parking Forecast")
-                        .font(.headline)
-                        .fontWeight(.semibold)
-                }
-            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color(.systemGroupedBackground).ignoresSafeArea())
+            .navigationBarHidden(true)
             .onAppear {
                 NotificationManager.shared.requestPermission()
                 vm.loadCurrentStatus()
             }
         }
     }
-}
 
-// MARK: - Sections
-private extension HomeView {
-    
-    var backgroundView: some View {
-        LinearGradient(
-            colors: [
-                Color(.systemGray6),
-                Color.white,
-                Color(.systemBlue).opacity(0.05)
-            ],
-            startPoint: .top,
-            endPoint: .bottom
-        )
-        .ignoresSafeArea()
-    }
-    
-    var headerSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .center) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("한강공원 주차장")
-                        .font(.title2)
-                        .fontWeight(.bold)
-                    
-                    Text(vm.parkingName)
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                }
-                
-                Spacer()
-                
+    private var topBar: some View {
+        HStack(spacing: 0) {
+            Text("한강공원 주차장")
+                .font(.title3)
+                .fontWeight(.semibold)
+                .foregroundColor(.white)
+
+            Spacer()
+
+            Button(action: {}) {
                 ZStack {
                     Circle()
-                        .fill(Color.white.opacity(0.85))
-                        .frame(width: 52, height: 52)
-                        .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 4)
-                    
-                    Image(systemName: "parkingsign.circle.fill")
-                        .font(.system(size: 24))
-                        .foregroundStyle(
-                            LinearGradient(
-                                colors: [.blue, .cyan],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                }
-            }
-            
-            Text("실시간 잔여 주차 공간과 혼잡 예측 정보를 확인하세요")
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-    
-    var mainStatusCard: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            HStack {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Current Availability")
-                        .font(.subheadline)
-                        .foregroundColor(.white.opacity(0.85))
-                    
-                    Text("현재 남은 자리")
-                        .font(.headline)
+                        .fill(Color.white.opacity(0.20))
+                        .frame(width: 42, height: 42)
+
+                    Image(systemName: "bell")
+                        .font(.system(size: 18, weight: .semibold))
                         .foregroundColor(.white)
                 }
-                
-                Spacer()
-                
-                statusBadge
-            }
-            
-            VStack(alignment: .leading, spacing: 8) {
-                Text("\(vm.availableSpaces)")
-                    .font(.system(size: 62, weight: .bold, design: .rounded))
-                    .foregroundColor(.white)
-                    .contentTransition(.numericText())
-                
-                Text(statusDescription)
-                    .font(.subheadline)
-                    .foregroundColor(.white.opacity(0.88))
-            }
-            
-            HStack(spacing: 12) {
-                metricPill(
-                    title: "혼잡도",
-                    value: vm.congestionLevel,
-                    icon: congestionIcon
-                )
-                
-                metricPill(
-                    title: "예측 상태",
-                    value: predictedStatus,
-                    icon: "clock.arrow.circlepath"
-                )
             }
         }
-        .padding(24)
-        .frame(maxWidth: .infinity)
+        .padding(.horizontal, 20)
+        .padding(.top, 18)
+        .padding(.bottom, 18)
         .background(
             LinearGradient(
-                colors: [
-                    Color(red: 0.10, green: 0.16, blue: 0.28),
-                    Color(red: 0.16, green: 0.34, blue: 0.72)
-                ],
+                colors: [Color(red: 0.67, green: 0.88, blue: 0.99), Color(red: 0.44, green: 0.72, blue: 0.96)],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
+            .ignoresSafeArea(edges: .top)
         )
-        .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
-        .shadow(color: Color.blue.opacity(0.18), radius: 20, x: 0, y: 12)
     }
-    
-    var quickInfoSection: some View {
-        HStack(spacing: 14) {
-            glassInfoCard(
-                title: "운영 상태",
-                value: "정상",
-                icon: "checkmark.seal.fill"
-            )
-            
-            glassInfoCard(
-                title: "추천 행동",
-                value: recommendationText,
-                icon: "sparkles"
-            )
-        }
-    }
-    
-    var actionSection: some View {
-        VStack(spacing: 14) {
-            NavigationLink {
-                PredictionView(vm: vm)
-            } label: {
-                HStack(spacing: 10) {
-                    Image(systemName: "chart.line.uptrend.xyaxis")
-                        .font(.headline)
-                    
-                    Text("예측 결과 보기")
-                        .font(.headline)
-                        .fontWeight(.semibold)
-                    
-                    Spacer()
-                    
-                    Image(systemName: "arrow.right")
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
-                }
-                .foregroundColor(.white)
-                .padding(.horizontal, 18)
-                .frame(height: 58)
-                .frame(maxWidth: .infinity)
-                .background(
-                    LinearGradient(
-                        colors: [.blue, .indigo],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                )
-                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                .shadow(color: .blue.opacity(0.18), radius: 12, x: 0, y: 6)
-            }
-            
-            Button {
-                vm.reserveNotification()
-            } label: {
-                HStack(spacing: 10) {
-                    Image(systemName: "bell.badge.fill")
-                        .font(.headline)
-                    
-                    Text("혼잡 알림 설정")
-                        .font(.headline)
-                        .fontWeight(.semibold)
-                    
-                    Spacer()
-                }
-                .foregroundColor(.primary)
-                .padding(.horizontal, 18)
-                .frame(height: 58)
-                .frame(maxWidth: .infinity)
-                .background(.ultraThinMaterial)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .stroke(Color.white.opacity(0.7), lineWidth: 1)
-                )
-                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                .shadow(color: .black.opacity(0.05), radius: 10, x: 0, y: 4)
-            }
-        }
-    }
-    
-    var footerSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("서비스 안내")
-                .font(.footnote)
-                .fontWeight(.semibold)
-                .foregroundColor(.secondary)
-            
-            Text("실시간 상태와 과거 패턴 기반 예측 결과를 제공하며, 혼잡이 예상될 경우 알림 기능으로 미리 확인할 수 있습니다.")
-                .font(.footnote)
-                .foregroundColor(.secondary)
-                .lineSpacing(3)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.top, 4)
-    }
-}
 
-// MARK: - Components
-private extension HomeView {
-    
-    var statusBadge: some View {
-        HStack(spacing: 6) {
-            Circle()
-                .fill(congestionColor)
-                .frame(width: 8, height: 8)
-            
-            Text(vm.congestionLevel)
-                .font(.caption)
-                .fontWeight(.bold)
-                .foregroundColor(.white)
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .background(Color.white.opacity(0.16))
-        .clipShape(Capsule())
-    }
-    
-    func metricPill(title: String, value: String, icon: String) -> some View {
-        HStack(spacing: 10) {
-            Image(systemName: icon)
-                .font(.headline)
-                .foregroundColor(.white)
-            
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.caption2)
-                    .foregroundColor(.white.opacity(0.75))
-                
-                Text(value)
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.white)
-            }
-            
-            Spacer(minLength: 0)
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 12)
-        .frame(maxWidth: .infinity)
-        .background(Color.white.opacity(0.12))
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-    }
-    
-    func glassInfoCard(title: String, value: String, icon: String) -> some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Image(systemName: icon)
-                .font(.title3)
-                .foregroundStyle(.blue)
-            
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                
-                Text(value)
-                    .font(.headline)
-                    .fontWeight(.semibold)
+    private var mainStatusCard: some View {
+        VStack(alignment: .leading, spacing: 22) {
+            HStack(alignment: .top) {
+                Text("난지 주차장")
+                    .font(.title3)
+                    .fontWeight(.bold)
                     .foregroundColor(.primary)
-                    .lineLimit(2)
+
+                Spacer()
+
+                statusTag(title: "혼잡", color: Color(red: 0.98, green: 0.82, blue: 0.72), textColor: Color(red: 0.80, green: 0.40, blue: 0.20))
             }
+
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text("42")
+                    .font(.system(size: 54, weight: .bold, design: .rounded))
+                    .foregroundColor(Color(red: 0.08, green: 0.13, blue: 0.24))
+
+                Text("/ 250대")
+                    .font(.title3)
+                    .foregroundColor(.secondary)
+            }
+
+            Text("현재 남은 자리")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+
+            progressBar
+        }
+        .padding(22)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
+        .shadow(color: Color.black.opacity(0.05), radius: 14, x: 0, y: 8)
+    }
+
+    private var progressBar: some View {
+        GeometryReader { proxy in
+            ZStack(alignment: .leading) {
+                Capsule()
+                    .fill(Color(.systemGray5))
+                    .frame(height: 12)
+
+                Capsule()
+                    .fill(Color(red: 0.94, green: 0.60, blue: 0.34))
+                    .frame(width: proxy.size.width * 0.168, height: 12)
+            }
+        }
+        .frame(height: 12)
+    }
+
+    private var futureSection: some View {
+        VStack(spacing: 14) {
+            HStack(spacing: 10) {
+                Image(systemName: "arrow.up.right")
+                    .font(.title3)
+                    .foregroundColor(Color(red: 0.30, green: 0.62, blue: 0.96))
+
+                Text("미래 예측")
+                    .font(.headline)
+                    .fontWeight(.bold)
+
+                Spacer()
+            }
+
+            VStack(spacing: 12) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("1시간 후")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+
+                        Text("18대")
+                            .font(.title)
+                            .fontWeight(.bold)
+                            .foregroundColor(Color(red: 0.08, green: 0.13, blue: 0.24))
+                    }
+
+                    Spacer()
+
+                    statusTag(title: "매우 혼잡", color: Color(red: 0.99, green: 0.88, blue: 0.86), textColor: Color(red: 0.78, green: 0.29, blue: 0.17))
+                }
+                .padding(18)
+                .background(Color.white)
+                .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+
+                HStack(alignment: .center, spacing: 14) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.title3)
+                        .foregroundColor(Color(red: 0.86, green: 0.32, blue: 0.23))
+                        .frame(width: 36, height: 36)
+                        .background(Color(red: 0.99, green: 0.92, blue: 0.90))
+                        .clipShape(Circle())
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("오늘 가장 혼잡한 시간")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+
+                        Text("17:00")
+                            .font(.headline)
+                            .fontWeight(.bold)
+                            .foregroundColor(Color(red: 0.86, green: 0.32, blue: 0.23))
+                    }
+
+                    Spacer()
+                }
+                .padding(18)
+                .background(Color.white)
+                .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        .stroke(Color(red: 0.99, green: 0.92, blue: 0.90), lineWidth: 1)
+                )
+            }
+        }
+    }
+
+    private var actionSection: some View {
+        VStack(spacing: 12) {
+            actionRow(icon: "location.fill", title: "대체 주차장 보기", subtitle: "주변 주차장 추천")
+            actionRow(icon: "clock.fill", title: "출발 타이밍 추천", subtitle: "언제 출발해야 할까요?")
+            actionRow(icon: "chart.bar.fill", title: "시간대별 분석", subtitle: "예측 그래프 보기")
+        }
+    }
+
+    private var favoriteSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("즐겨찾기")
+                    .font(.headline)
+                    .fontWeight(.bold)
+
+                Spacer()
+
+                Text("설정")
+                    .font(.footnote)
+                    .foregroundColor(Color.blue)
+            }
+
+            Text("자주 가는 주차장을 저장하세요")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
         }
         .padding(18)
-        .frame(maxWidth: .infinity, minHeight: 120, alignment: .topLeading)
-        .background(.ultraThinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
-        .shadow(color: .black.opacity(0.04), radius: 10, x: 0, y: 4)
+        .frame(maxWidth: .infinity)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .shadow(color: Color.black.opacity(0.04), radius: 12, x: 0, y: 6)
+    }
+
+    private func statusTag(title: String, color: Color, textColor: Color) -> some View {
+        Text(title)
+            .font(.caption)
+            .fontWeight(.semibold)
+            .foregroundColor(textColor)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(color)
+            .clipShape(Capsule())
+    }
+
+    private func actionRow(icon: String, title: String, subtitle: String) -> some View {
+        HStack(spacing: 14) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(Color(.systemGray6))
+                    .frame(width: 48, height: 48)
+
+                Image(systemName: icon)
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundColor(Color.blue)
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.headline)
+                    .foregroundColor(.primary)
+                Text(subtitle)
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+            }
+
+            Spacer()
+
+            Image(systemName: "chevron.right")
+                .foregroundColor(.secondary)
+        }
+        .padding(16)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .shadow(color: Color.black.opacity(0.04), radius: 10, x: 0, y: 6)
     }
 }
 
 // MARK: - Derived State
 private extension HomeView {
-    
     var congestionColor: Color {
         switch vm.congestionLevel {
         case "여유":
@@ -334,7 +275,7 @@ private extension HomeView {
             return .gray
         }
     }
-    
+
     var congestionIcon: String {
         switch vm.congestionLevel {
         case "여유":
@@ -347,7 +288,7 @@ private extension HomeView {
             return "questionmark.circle.fill"
         }
     }
-    
+
     var statusDescription: String {
         switch vm.congestionLevel {
         case "여유":
@@ -360,7 +301,7 @@ private extension HomeView {
             return "실시간 데이터를 불러오는 중입니다."
         }
     }
-    
+
     var predictedStatus: String {
         if vm.availableSpaces >= 30 {
             return "안정적"
@@ -370,7 +311,7 @@ private extension HomeView {
             return "혼잡 예상"
         }
     }
-    
+
     var recommendationText: String {
         if vm.availableSpaces >= 30 {
             return "바로 방문 추천"
