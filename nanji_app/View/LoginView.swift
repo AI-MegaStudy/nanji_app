@@ -289,7 +289,7 @@ private struct MyPageView: View {
         NavigationStack {
             VStack(spacing: 20) {
                 VStack(alignment: .leading, spacing: 12) {
-                    Text(authStore.currentUserName)
+                    Text(maskedUserName)
                         .font(.title2)
                         .fontWeight(.bold)
 
@@ -297,8 +297,8 @@ private struct MyPageView: View {
                         .font(.subheadline)
                         .foregroundColor(.secondary)
 
-                    if let email = authStore.currentUserEmail {
-                        Text(email)
+                    if let maskedEmail {
+                        Text(maskedEmail)
                             .font(.footnote)
                             .foregroundColor(.secondary)
                     }
@@ -334,6 +334,15 @@ private struct MyPageView: View {
         }
 
         return "\(provider.title) 계정으로 로그인됨"
+    }
+
+    private var maskedUserName: String {
+        PrivacyMasker.maskedName(authStore.currentUserName)
+    }
+
+    private var maskedEmail: String? {
+        guard let email = authStore.currentUserEmail else { return nil }
+        return PrivacyMasker.maskedEmail(email)
     }
 }
 

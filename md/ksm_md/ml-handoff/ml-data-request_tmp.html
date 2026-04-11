@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>ml-data-request.md</title>
+<meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+
+<style>
+/* https://github.com/microsoft/vscode/blob/master/extensions/markdown-language-features/media/markdown.css */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+body {
+	font-family: var(--vscode-markdown-font-family, -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif);
+	font-size: var(--vscode-markdown-font-size, 14px);
+	padding: 0 26px;
+	line-height: var(--vscode-markdown-line-height, 22px);
+	word-wrap: break-word;
+}
+
+#code-csp-warning {
+	position: fixed;
+	top: 0;
+	right: 0;
+	color: white;
+	margin: 16px;
+	text-align: center;
+	font-size: 12px;
+	font-family: sans-serif;
+	background-color:#444444;
+	cursor: pointer;
+	padding: 6px;
+	box-shadow: 1px 1px 1px rgba(0,0,0,.25);
+}
+
+#code-csp-warning:hover {
+	text-decoration: none;
+	background-color:#007acc;
+	box-shadow: 2px 2px 2px rgba(0,0,0,.25);
+}
+
+body.scrollBeyondLastLine {
+	margin-bottom: calc(100vh - 22px);
+}
+
+body.showEditorSelection .code-line {
+	position: relative;
+}
+
+body.showEditorSelection .code-active-line:before,
+body.showEditorSelection .code-line:hover:before {
+	content: "";
+	display: block;
+	position: absolute;
+	top: 0;
+	left: -12px;
+	height: 100%;
+}
+
+body.showEditorSelection li.code-active-line:before,
+body.showEditorSelection li.code-line:hover:before {
+	left: -30px;
+}
+
+.vscode-light.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.15);
+}
+
+.vscode-light.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.40);
+}
+
+.vscode-light.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-dark.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.4);
+}
+
+.vscode-dark.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.60);
+}
+
+.vscode-dark.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-high-contrast.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 160, 0, 0.7);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 160, 0, 1);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+img {
+	max-width: 100%;
+	max-height: 100%;
+}
+
+a {
+	text-decoration: none;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+a:focus,
+input:focus,
+select:focus,
+textarea:focus {
+	outline: 1px solid -webkit-focus-ring-color;
+	outline-offset: -1px;
+}
+
+hr {
+	border: 0;
+	height: 2px;
+	border-bottom: 2px solid;
+}
+
+h1 {
+	padding-bottom: 0.3em;
+	line-height: 1.2;
+	border-bottom-width: 1px;
+	border-bottom-style: solid;
+}
+
+h1, h2, h3 {
+	font-weight: normal;
+}
+
+table {
+	border-collapse: collapse;
+}
+
+table > thead > tr > th {
+	text-align: left;
+	border-bottom: 1px solid;
+}
+
+table > thead > tr > th,
+table > thead > tr > td,
+table > tbody > tr > th,
+table > tbody > tr > td {
+	padding: 5px 10px;
+}
+
+table > tbody > tr + tr > td {
+	border-top: 1px solid;
+}
+
+blockquote {
+	margin: 0 7px 0 5px;
+	padding: 0 16px 0 10px;
+	border-left-width: 5px;
+	border-left-style: solid;
+}
+
+code {
+	font-family: Menlo, Monaco, Consolas, "Droid Sans Mono", "Courier New", monospace, "Droid Sans Fallback";
+	font-size: 1em;
+	line-height: 1.357em;
+}
+
+body.wordWrap pre {
+	white-space: pre-wrap;
+}
+
+pre:not(.hljs),
+pre.hljs code > div {
+	padding: 16px;
+	border-radius: 3px;
+	overflow: auto;
+}
+
+pre code {
+	color: var(--vscode-editor-foreground);
+	tab-size: 4;
+}
+
+/** Theming */
+
+.vscode-light pre {
+	background-color: rgba(220, 220, 220, 0.4);
+}
+
+.vscode-dark pre {
+	background-color: rgba(10, 10, 10, 0.4);
+}
+
+.vscode-high-contrast pre {
+	background-color: rgb(0, 0, 0);
+}
+
+.vscode-high-contrast h1 {
+	border-color: rgb(0, 0, 0);
+}
+
+.vscode-light table > thead > tr > th {
+	border-color: rgba(0, 0, 0, 0.69);
+}
+
+.vscode-dark table > thead > tr > th {
+	border-color: rgba(255, 255, 255, 0.69);
+}
+
+.vscode-light h1,
+.vscode-light hr,
+.vscode-light table > tbody > tr + tr > td {
+	border-color: rgba(0, 0, 0, 0.18);
+}
+
+.vscode-dark h1,
+.vscode-dark hr,
+.vscode-dark table > tbody > tr + tr > td {
+	border-color: rgba(255, 255, 255, 0.18);
+}
+
+</style>
+
+<style>
+/* Tomorrow Theme */
+/* http://jmblog.github.com/color-themes-for-google-code-highlightjs */
+/* Original theme - https://github.com/chriskempson/tomorrow-theme */
+
+/* Tomorrow Comment */
+.hljs-comment,
+.hljs-quote {
+	color: #8e908c;
+}
+
+/* Tomorrow Red */
+.hljs-variable,
+.hljs-template-variable,
+.hljs-tag,
+.hljs-name,
+.hljs-selector-id,
+.hljs-selector-class,
+.hljs-regexp,
+.hljs-deletion {
+	color: #c82829;
+}
+
+/* Tomorrow Orange */
+.hljs-number,
+.hljs-built_in,
+.hljs-builtin-name,
+.hljs-literal,
+.hljs-type,
+.hljs-params,
+.hljs-meta,
+.hljs-link {
+	color: #f5871f;
+}
+
+/* Tomorrow Yellow */
+.hljs-attribute {
+	color: #eab700;
+}
+
+/* Tomorrow Green */
+.hljs-string,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-addition {
+	color: #718c00;
+}
+
+/* Tomorrow Blue */
+.hljs-title,
+.hljs-section {
+	color: #4271ae;
+}
+
+/* Tomorrow Purple */
+.hljs-keyword,
+.hljs-selector-tag {
+	color: #8959a8;
+}
+
+.hljs {
+	display: block;
+	overflow-x: auto;
+	color: #4d4d4c;
+	padding: 0.5em;
+}
+
+.hljs-emphasis {
+	font-style: italic;
+}
+
+.hljs-strong {
+	font-weight: bold;
+}
+</style>
+
+<style>
+/*
+ * Markdown PDF CSS
+ */
+
+ body {
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif, "Meiryo";
+	padding: 0 12px;
+}
+
+pre {
+	background-color: #f8f8f8;
+	border: 1px solid #cccccc;
+	border-radius: 3px;
+	overflow-x: auto;
+	white-space: pre-wrap;
+	overflow-wrap: break-word;
+}
+
+pre:not(.hljs) {
+	padding: 23px;
+	line-height: 19px;
+}
+
+blockquote {
+	background: rgba(127, 127, 127, 0.1);
+	border-color: rgba(0, 122, 204, 0.5);
+}
+
+.emoji {
+	height: 1.4em;
+}
+
+code {
+	font-size: 14px;
+	line-height: 19px;
+}
+
+/* for inline code */
+:not(pre):not(.hljs) > code {
+	color: #C9AE75; /* Change the old color so it seems less like an error */
+	font-size: inherit;
+}
+
+/* Page Break : use <div class="page"/> to insert page break
+-------------------------------------------------------- */
+.page {
+	page-break-after: always;
+}
+
+</style>
+
+<script src="https://unpkg.com/mermaid/dist/mermaid.min.js"></script>
+</head>
+<body>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast')
+          ? 'dark'
+          : 'default'
+    });
+  </script>
+<h1 id="nanji-ml-%EB%8D%B0%EC%9D%B4%ED%84%B0-%EC%9A%94%EC%B2%AD-%EC%A0%95%EB%A6%AC">Nanji ML 데이터 요청 정리</h1>
+<h2 id="%EB%AC%B8%EC%84%9C-%EB%AA%A9%EC%A0%81">문서 목적</h2>
+<ul>
+<li>머신러닝 모델 담당자에게 어떤 데이터와 산출물을 요청해야 하는지 정리한다.</li>
+<li>현재 확정된 DB 구조와 FastAPI 연결 흐름을 기준으로 협업 포인트를 맞춘다.</li>
+<li>앱 사용자 화면과 관리자 대시보드에 바로 연결할 수 있는 형태를 기준으로 요청한다.</li>
+</ul>
+<h2 id="%ED%98%84%EC%9E%AC-%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8-%EA%B8%B0%EC%A4%80">현재 프로젝트 기준</h2>
+<ul>
+<li>DB는 AWS RDS MySQL <code>hangang_parking</code>을 사용 중이다.</li>
+<li>테이블은 이미 생성되어 있고, FastAPI는 기존 테이블에 연결하는 방향으로 진행 중이다.</li>
+<li>현재 핵심 테이블은 아래와 같다.
+<ul>
+<li><code>parking_lot</code></li>
+<li><code>parking_status_log</code></li>
+<li><code>parking_prediction</code></li>
+<li><code>departure_recommendation</code></li>
+<li><code>user</code></li>
+<li><code>user_fcm_device_token</code></li>
+<li><code>user_favorite_parking_lot</code></li>
+<li><code>user_notification_setting</code></li>
+<li><code>notification_log</code></li>
+<li><code>user_action_log</code></li>
+</ul>
+</li>
+<li>최종 DB 기준 문서는 <code>md/ksm_md/database-design/final-db-design.md</code>를 따른다.</li>
+</ul>
+<h2 id="%EB%B0%B1%EC%97%94%EB%93%9C-%ED%9D%90%EB%A6%84">백엔드 흐름</h2>
+<ul>
+<li>앱과 관리자 웹은 직접 DB에 붙지 않는다.</li>
+<li>기본 흐름은 아래와 같다.
+<ul>
+<li><code>앱 / 관리자 웹 -&gt; FastAPI -&gt; MySQL</code></li>
+</ul>
+</li>
+<li>따라서 머신러닝 담당자에게는 “모델 파일만” 받는 것이 아니라, FastAPI와 DB에 붙일 수 있는 형태의 입력/출력 기준도 같이 받아야 한다.</li>
+</ul>
+<h2 id="%EB%A8%B8%EC%8B%A0%EB%9F%AC%EB%8B%9D-%EB%8B%B4%EB%8B%B9%EC%9E%90%EC%97%90%EA%B2%8C-%EA%BC%AD-%EC%9A%94%EC%B2%AD%ED%95%B4%EC%95%BC-%ED%95%98%EB%8A%94-%EA%B2%83">머신러닝 담당자에게 꼭 요청해야 하는 것</h2>
+<h3 id="1-%EB%AA%A8%EB%8D%B8-%EC%9E%85%EB%A0%A5-%EB%8D%B0%EC%9D%B4%ED%84%B0-%EC%A0%95%EC%9D%98">1. 모델 입력 데이터 정의</h3>
+<ul>
+<li>어떤 컬럼을 입력으로 사용하는지</li>
+<li>각 컬럼의 의미</li>
+<li>각 컬럼의 타입</li>
+<li>결측치가 있을 때 처리 방식</li>
+<li>데이터 전처리 방식</li>
+<li>시간 단위
+<ul>
+<li>예: 5분 단위, 10분 단위, 1시간 단위</li>
+</ul>
+</li>
+<li>예측 기준 시각과 예측 대상 시각의 관계</li>
+</ul>
+<p>예시 질문</p>
+<ul>
+<li>예측할 때 필요한 최소 입력 컬럼은 무엇인가?</li>
+<li><code>parking_status_log</code>만으로 가능한가, 아니면 날씨/공휴일/요일/시간대가 추가로 필요한가?</li>
+<li>입력은 주차장별 시계열인가, 전체 데이터 통합인가?</li>
+</ul>
+<h3 id="2-%EB%AA%A8%EB%8D%B8-%ED%95%99%EC%8A%B5-%EB%8D%B0%EC%9D%B4%ED%84%B0-%EC%9A%94%EA%B5%AC%EC%82%AC%ED%95%AD">2. 모델 학습 데이터 요구사항</h3>
+<ul>
+<li>학습에 사용한 원본 데이터 구조</li>
+<li>주차장별 데이터 분리 여부</li>
+<li>최소 필요한 데이터 기간
+<ul>
+<li>예: 최소 3개월, 6개월, 1년</li>
+</ul>
+</li>
+<li>학습 데이터의 시간 해상도
+<ul>
+<li>예: 10분 단위 기록</li>
+</ul>
+</li>
+<li>데이터가 부족한 주차장일 때 처리 방식</li>
+</ul>
+<p>예시 질문</p>
+<ul>
+<li>난지 주차장만 학습 가능한지, 다른 주차장도 일반화 가능한지?</li>
+<li>주차장별로 모델을 따로 써야 하는지, 하나의 모델로 처리 가능한지?</li>
+</ul>
+<h3 id="3-%EC%98%88%EC%B8%A1-%EA%B2%B0%EA%B3%BC-%ED%8F%AC%EB%A7%B7">3. 예측 결과 포맷</h3>
+<ul>
+<li>FastAPI와 DB에 넣으려면 예측 결과 형식을 미리 확정해야 한다.</li>
+<li>아래 항목들을 요청한다.</li>
+</ul>
+<p>필수 요청 항목</p>
+<ul>
+<li><code>예측 기준 시각</code></li>
+<li><code>예측 대상 시각</code></li>
+<li><code>예측 남은 자리 수</code></li>
+<li><code>예측 점유 대수</code></li>
+<li><code>예측 점유율</code></li>
+<li><code>예측 혼잡도</code></li>
+<li><code>신뢰도 점수</code></li>
+<li><code>모델 버전</code></li>
+</ul>
+<p>현재 DB 대응 테이블</p>
+<ul>
+<li><code>parking_prediction</code></li>
+</ul>
+<p>현재 컬럼 기준</p>
+<ul>
+<li><code>pp_parking_lot_id</code></li>
+<li><code>pp_base_time</code></li>
+<li><code>pp_predicted_time</code></li>
+<li><code>pp_prediction_horizon_minutes</code></li>
+<li><code>pp_predicted_occupied_spaces</code></li>
+<li><code>pp_predicted_available_spaces</code></li>
+<li><code>pp_predicted_occupancy_rate</code></li>
+<li><code>pp_predicted_congestion_level</code></li>
+<li><code>pp_confidence_score</code></li>
+<li><code>pp_model_version</code></li>
+</ul>
+<p>즉, 머신러닝 담당자에게는 최소한 위 컬럼에 매핑 가능한 결과를 달라고 요청해야 한다.</p>
+<h3 id="4-%EC%B6%9C%EB%B0%9C-%ED%83%80%EC%9D%B4%EB%B0%8D-%EC%B6%94%EC%B2%9C-%EC%82%B0%EC%B6%9C-%EA%B8%B0%EC%A4%80">4. 출발 타이밍 추천 산출 기준</h3>
+<ul>
+<li>단순 예측값만으로 끝나지 않고, 앱에서는 “언제 출발하면 좋은지”까지 보여줘야 한다.</li>
+<li>따라서 아래도 같이 요청해야 한다.</li>
+</ul>
+<p>요청 항목</p>
+<ul>
+<li>추천 도착 시간 계산 기준</li>
+<li>추천 출발 시간 계산 기준</li>
+<li>혼잡 시간대 계산 기준</li>
+<li>여유 시간대 계산 기준</li>
+<li>추천 메시지 생성 규칙</li>
+<li>추천 근거 요약 방식</li>
+</ul>
+<p>현재 DB 대응 테이블</p>
+<ul>
+<li><code>departure_recommendation</code></li>
+</ul>
+<p>현재 컬럼 기준</p>
+<ul>
+<li><code>dr_parking_lot_id</code></li>
+<li><code>dr_target_date</code></li>
+<li><code>dr_recommended_arrival_time</code></li>
+<li><code>dr_recommended_departure_time</code></li>
+<li><code>dr_busy_time_start</code></li>
+<li><code>dr_busy_time_end</code></li>
+<li><code>dr_free_time_start</code></li>
+<li><code>dr_free_time_end</code></li>
+<li><code>dr_recommended_message</code></li>
+<li><code>dr_reason_summary</code></li>
+</ul>
+<p>즉, 머신러닝 담당자에게는 “예측값”뿐 아니라 “추천 로직 산출 기준”까지 같이 요청해야 한다.</p>
+<h3 id="5-%ED%98%BC%EC%9E%A1%EB%8F%84-%EB%B6%84%EB%A5%98-%EA%B8%B0%EC%A4%80">5. 혼잡도 분류 기준</h3>
+<ul>
+<li>앱과 관리자 웹에서는 숫자만이 아니라 상태값도 같이 보여준다.</li>
+<li>따라서 혼잡도 등급 분류 기준을 꼭 받아야 한다.</li>
+</ul>
+<p>예시</p>
+<ul>
+<li><code>free</code></li>
+<li><code>normal</code></li>
+<li><code>busy</code></li>
+<li><code>full</code></li>
+</ul>
+<p>요청할 내용</p>
+<ul>
+<li>점유율 몇 퍼센트부터 <code>busy</code>인지</li>
+<li><code>normal</code>과 <code>busy</code>를 나누는 기준</li>
+<li>예측 결과와 실시간 데이터에서 같은 기준을 쓸지 여부</li>
+</ul>
+<p>이 기준은 아래 두 테이블에 같이 맞아야 한다.</p>
+<ul>
+<li><code>parking_status_log.ps_congestion_level</code></li>
+<li><code>parking_prediction.pp_predicted_congestion_level</code></li>
+</ul>
+<h3 id="6-%EC%A3%BC%EC%B0%A8%EC%9E%A5-%EA%B8%B0%EB%8A%A5-%EC%A0%81%EC%9A%A9-%EB%B2%94%EC%9C%84">6. 주차장 기능 적용 범위</h3>
+<ul>
+<li>현재 프로젝트는 주차장마다 제공 기능이 다를 수 있다.</li>
+<li>예: 난지 주차장만 예측 가능</li>
+</ul>
+<p>따라서 머신러닝 담당자에게 아래를 물어봐야 한다.</p>
+<ul>
+<li>어떤 주차장이 예측 대상인지</li>
+<li>어떤 주차장은 실시간만 가능한지</li>
+<li>어떤 주차장은 출발 타이밍 추천까지 가능한지</li>
+</ul>
+<p>이 정보는 아래 컬럼과 연결된다.</p>
+<ul>
+<li><code>p_supports_prediction</code></li>
+<li><code>p_supports_departure_timing</code></li>
+</ul>
+<h3 id="7-%EB%AA%A8%EB%8D%B8-%EC%8B%A4%ED%96%89-%EB%B0%A9%EC%8B%9D">7. 모델 실행 방식</h3>
+<ul>
+<li>백엔드에서 실제 연결하려면 실행 방식이 필요하다.</li>
+<li>단순히 노트북 코드만 받으면 바로 붙이기 어렵다.</li>
+</ul>
+<p>반드시 요청할 것</p>
+<ul>
+<li>추론 실행 코드</li>
+<li>입력 예시</li>
+<li>출력 예시</li>
+<li>패키지 버전</li>
+<li>실행 명령어</li>
+<li>CPU/GPU 필요 여부</li>
+<li>실행 시간</li>
+</ul>
+<p>가능하면 받으면 좋은 것</p>
+<ul>
+<li><code>requirements.txt</code></li>
+<li>모델 파일 경로 구조</li>
+<li>함수 진입점
+<ul>
+<li>예: <code>predict(parking_lot_id, base_time, records)</code></li>
+</ul>
+</li>
+</ul>
+<h3 id="8-api-%EC%97%B0%EB%8F%99-%EB%B0%A9%EC%8B%9D">8. API 연동 방식</h3>
+<ul>
+<li>FastAPI에 붙일 때 아래 둘 중 어떤 방식인지 정해야 한다.</li>
+</ul>
+<p>가능한 방식</p>
+<ul>
+<li>Python 함수 호출형
+<ul>
+<li>FastAPI 내부에서 직접 모델 함수를 호출</li>
+</ul>
+</li>
+<li>별도 추론 API 호출형
+<ul>
+<li>FastAPI가 ML 서버 API를 다시 호출</li>
+</ul>
+</li>
+</ul>
+<p>현재 프로젝트 단계에서는 아래를 우선 추천한다.</p>
+<ul>
+<li>Python 함수 호출형</li>
+</ul>
+<p>머신러닝 담당자에게 요청할 것</p>
+<ul>
+<li>FastAPI 내부에서 바로 부를 수 있는 함수 형태 제공 가능 여부</li>
+<li>불가능하면 별도 API 명세 제공</li>
+</ul>
+<h2 id="%EB%A8%B8%EC%8B%A0%EB%9F%AC%EB%8B%9D-%EB%8B%B4%EB%8B%B9%EC%9E%90%EC%97%90%EA%B2%8C-%EB%B0%94%EB%A1%9C-%EB%B3%B4%EB%82%BC-%EC%A7%88%EB%AC%B8-%EB%AA%A9%EB%A1%9D">머신러닝 담당자에게 바로 보낼 질문 목록</h2>
+<h3 id="%EB%8D%B0%EC%9D%B4%ED%84%B0-%EA%B4%80%EB%A0%A8">데이터 관련</h3>
+<ul>
+<li>예측 모델에 필요한 입력 컬럼은 정확히 무엇인가?</li>
+<li>각 입력 컬럼의 타입과 전처리 방식은 무엇인가?</li>
+<li>예측에 필요한 최소 데이터 기간은 어느 정도인가?</li>
+<li>주차장별로 모델이 분리되는가, 공통 모델인가?</li>
+</ul>
+<h3 id="%EC%98%88%EC%B8%A1-%EA%B2%B0%EA%B3%BC-%EA%B4%80%EB%A0%A8">예측 결과 관련</h3>
+<ul>
+<li>예측 결과를 어떤 형식으로 반환하는가?</li>
+<li>예측 시각별로 남은 자리 수와 점유율을 같이 줄 수 있는가?</li>
+<li>혼잡도 상태값도 같이 줄 수 있는가?</li>
+<li>신뢰도 점수를 줄 수 있는가?</li>
+</ul>
+<h3 id="%EC%B6%94%EC%B2%9C-%EA%B4%80%EB%A0%A8">추천 관련</h3>
+<ul>
+<li>출발 타이밍 추천 로직도 모델 산출물에 포함되는가?</li>
+<li>추천 도착 시간 / 출발 시간 / 혼잡 시간 / 여유 시간 계산 기준은 무엇인가?</li>
+<li>추천 메시지는 규칙 기반인가, 모델 생성형인가?</li>
+</ul>
+<h3 id="%EC%9A%B4%EC%98%81-%EA%B4%80%EB%A0%A8">운영 관련</h3>
+<ul>
+<li>모델 버전은 어떻게 관리하는가?</li>
+<li>재학습 주기는 어느 정도인가?</li>
+<li>추론 속도는 어느 정도인가?</li>
+<li>배포 가능한 Python 함수 형태로 줄 수 있는가?</li>
+</ul>
+<h2 id="%EB%B0%B1%EC%97%94%EB%93%9C-%EA%B8%B0%EC%A4%80%EC%9C%BC%EB%A1%9C-%EC%B5%9C%EC%A2%85%EC%A0%81%EC%9C%BC%EB%A1%9C-%EB%B0%9B%EC%95%84%EC%95%BC-%ED%95%98%EB%8A%94-%EC%82%B0%EC%B6%9C%EB%AC%BC">백엔드 기준으로 최종적으로 받아야 하는 산출물</h2>
+<h3 id="%EC%B5%9C%EC%86%8C-%ED%95%84%EC%88%98">최소 필수</h3>
+<ul>
+<li>입력 컬럼 명세</li>
+<li>입력 예시 데이터</li>
+<li>출력 컬럼 명세</li>
+<li>출력 예시 데이터</li>
+<li>혼잡도 분류 기준</li>
+<li>모델 버전 표기 방식</li>
+<li>실행 방법 설명</li>
+</ul>
+<h3 id="%EA%B0%80%EB%8A%A5%ED%95%98%EB%A9%B4-%EA%B0%99%EC%9D%B4-%EB%B0%9B%EA%B8%B0">가능하면 같이 받기</h3>
+<ul>
+<li>Python 추론 코드</li>
+<li><code>requirements.txt</code></li>
+<li>샘플 모델 파일</li>
+<li>테스트용 CSV</li>
+<li>주차장별 지원 범위 표</li>
+</ul>
+<h2 id="%EB%B0%B1%EC%97%94%EB%93%9C%EC%97%90%EC%84%9C-%EB%B0%94%EB%A1%9C-%EC%93%B0%EA%B8%B0-%EC%A2%8B%EC%9D%80-%EC%B6%9C%EB%A0%A5-%EC%98%88%EC%8B%9C">백엔드에서 바로 쓰기 좋은 출력 예시</h2>
+<h3 id="%EC%98%88%EC%B8%A1-%EA%B2%B0%EA%B3%BC-%EC%98%88%EC%8B%9C">예측 결과 예시</h3>
+<pre class="hljs"><code><div>{
+  <span class="hljs-attr">"parking_lot_id"</span>: <span class="hljs-number">1</span>,
+  <span class="hljs-attr">"base_time"</span>: <span class="hljs-string">"2026-04-12T14:00:00"</span>,
+  <span class="hljs-attr">"predictions"</span>: [
+    {
+      <span class="hljs-attr">"predicted_time"</span>: <span class="hljs-string">"2026-04-12T15:00:00"</span>,
+      <span class="hljs-attr">"prediction_horizon_minutes"</span>: <span class="hljs-number">60</span>,
+      <span class="hljs-attr">"predicted_occupied_spaces"</span>: <span class="hljs-number">82</span>,
+      <span class="hljs-attr">"predicted_available_spaces"</span>: <span class="hljs-number">18</span>,
+      <span class="hljs-attr">"predicted_occupancy_rate"</span>: <span class="hljs-number">82.0</span>,
+      <span class="hljs-attr">"predicted_congestion_level"</span>: <span class="hljs-string">"busy"</span>,
+      <span class="hljs-attr">"confidence_score"</span>: <span class="hljs-number">0.87</span>,
+      <span class="hljs-attr">"model_version"</span>: <span class="hljs-string">"v1.0.0"</span>
+    }
+  ]
+}
+</div></code></pre>
+<h3 id="%EC%B6%9C%EB%B0%9C-%ED%83%80%EC%9D%B4%EB%B0%8D-%EC%B6%94%EC%B2%9C-%EC%98%88%EC%8B%9C">출발 타이밍 추천 예시</h3>
+<pre class="hljs"><code><div>{
+  <span class="hljs-attr">"parking_lot_id"</span>: <span class="hljs-number">1</span>,
+  <span class="hljs-attr">"target_date"</span>: <span class="hljs-string">"2026-04-12"</span>,
+  <span class="hljs-attr">"recommended_arrival_time"</span>: <span class="hljs-string">"2026-04-12T09:30:00"</span>,
+  <span class="hljs-attr">"recommended_departure_time"</span>: <span class="hljs-string">"2026-04-12T09:00:00"</span>,
+  <span class="hljs-attr">"busy_time_start"</span>: <span class="hljs-string">"2026-04-12T13:00:00"</span>,
+  <span class="hljs-attr">"busy_time_end"</span>: <span class="hljs-string">"2026-04-12T16:00:00"</span>,
+  <span class="hljs-attr">"free_time_start"</span>: <span class="hljs-string">"2026-04-12T09:00:00"</span>,
+  <span class="hljs-attr">"free_time_end"</span>: <span class="hljs-string">"2026-04-12T11:00:00"</span>,
+  <span class="hljs-attr">"recommended_message"</span>: <span class="hljs-string">"오전 9시 30분 전후 방문을 추천합니다."</span>,
+  <span class="hljs-attr">"reason_summary"</span>: <span class="hljs-string">"오후 시간대 혼잡이 예상되어 오전 방문이 유리합니다."</span>
+}
+</div></code></pre>
+<h2 id="%EC%A0%95%EB%A6%AC">정리</h2>
+<ul>
+<li>머신러닝 담당자에게는 단순히 “예측 결과 주세요”라고 하면 안 된다.</li>
+<li>현재 DB와 FastAPI 구조에 맞춰 아래를 같이 요청해야 한다.
+<ul>
+<li>입력 데이터 정의</li>
+<li>학습 데이터 요구사항</li>
+<li>예측 결과 포맷</li>
+<li>출발 타이밍 추천 기준</li>
+<li>혼잡도 분류 기준</li>
+<li>주차장별 지원 범위</li>
+<li>실행 방식</li>
+</ul>
+</li>
+<li>이 문서를 기준으로 먼저 요구사항을 맞춘 뒤, 그다음 FastAPI 예측 API를 구현하는 흐름으로 간다.</li>
+</ul>
+
+</body>
+</html>

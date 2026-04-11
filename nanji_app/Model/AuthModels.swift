@@ -171,3 +171,79 @@ enum AuthErrorMessageMapper {
         return "로그인 중 오류가 발생했습니다."
     }
 }
+
+enum PrivacyMasker {
+    static func maskedName(_ value: String) -> String {
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return value }
+
+        let characters = Array(trimmed)
+
+        if characters.count == 1 {
+            return "\(characters[0])*"
+        }
+
+        if characters.count == 2 {
+            return "\(characters[0])*"
+        }
+
+        let first = String(characters.first!)
+        let last = String(characters.last!)
+        let middleMask = String(repeating: "*", count: max(characters.count - 2, 1))
+        return first + middleMask + last
+    }
+
+    static func maskedEmail(_ value: String) -> String {
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        let components = trimmed.split(separator: "@", maxSplits: 1).map(String.init)
+
+        guard components.count == 2 else { return maskedName(trimmed) }
+
+        let localPart = components[0]
+        let domainPart = components[1]
+
+        return maskedLocalPart(localPart) + "@" + maskedDomainPart(domainPart)
+    }
+
+    private static func maskedLocalPart(_ value: String) -> String {
+        let characters = Array(value)
+
+        switch characters.count {
+        case 0:
+            return ""
+        case 1:
+            return "\(characters[0])*"
+        case 2:
+            return "\(characters[0])*"
+        default:
+            let prefix = String(characters.prefix(2))
+            let mask = String(repeating: "*", count: max(characters.count - 2, 2))
+            return prefix + mask
+        }
+    }
+
+    private static func maskedDomainPart(_ value: String) -> String {
+        let sections = value.split(separator: ".", omittingEmptySubsequences: false).map(String.init)
+        guard let firstSection = sections.first else { return value }
+
+        let maskedFirstSection: String
+        let characters = Array(firstSection)
+
+        switch characters.count {
+        case 0:
+            maskedFirstSection = ""
+        case 1:
+            maskedFirstSection = "\(characters[0])*"
+        case 2:
+            maskedFirstSection = "\(characters[0])*"
+        default:
+            maskedFirstSection = String(characters.prefix(2)) + String(repeating: "*", count: max(characters.count - 2, 2))
+        }
+
+        if sections.count == 1 {
+            return maskedFirstSection
+        }
+
+        return ([maskedFirstSection] + sections.dropFirst()).joined(separator: ".")
+    }
+}
