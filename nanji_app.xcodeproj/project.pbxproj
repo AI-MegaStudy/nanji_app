@@ -6,13 +6,34 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		931983292F88BC0A0031343A /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 931983282F88BC0A0031343A /* GoogleSignIn */; };
+		9319832B2F88BC0A0031343A /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 9319832A2F88BC0A0031343A /* GoogleSignInSwift */; };
+		93E9ACBE2F8A0B8E00F35559 /* KakaoSDKAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 93E9ACBD2F8A0B8E00F35559 /* KakaoSDKAuth */; };
+		93E9ACC02F8A0B8E00F35559 /* KakaoSDKCommon in Frameworks */ = {isa = PBXBuildFile; productRef = 93E9ACBF2F8A0B8E00F35559 /* KakaoSDKCommon */; };
+		93E9ACC22F8A0B8E00F35559 /* KakaoSDKUser in Frameworks */ = {isa = PBXBuildFile; productRef = 93E9ACC12F8A0B8E00F35559 /* KakaoSDKUser */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		933D34152F7E570C0087FC8B /* nanji_app.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = nanji_app.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		9319832D2F88C6350031343A /* Exceptions for "nanji_app" folder in "nanji_app" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				"nanji-app-Info.plist",
+			);
+			target = 933D34142F7E570C0087FC8B /* nanji_app */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		933D34172F7E570C0087FC8B /* nanji_app */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				9319832D2F88C6350031343A /* Exceptions for "nanji_app" folder in "nanji_app" target */,
+			);
 			path = nanji_app;
 			sourceTree = "<group>";
 		};
@@ -23,6 +44,11 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				93E9ACC02F8A0B8E00F35559 /* KakaoSDKCommon in Frameworks */,
+				931983292F88BC0A0031343A /* GoogleSignIn in Frameworks */,
+				9319832B2F88BC0A0031343A /* GoogleSignInSwift in Frameworks */,
+				93E9ACC22F8A0B8E00F35559 /* KakaoSDKUser in Frameworks */,
+				93E9ACBE2F8A0B8E00F35559 /* KakaoSDKAuth in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -65,6 +91,11 @@
 			);
 			name = nanji_app;
 			packageProductDependencies = (
+				931983282F88BC0A0031343A /* GoogleSignIn */,
+				9319832A2F88BC0A0031343A /* GoogleSignInSwift */,
+				93E9ACBD2F8A0B8E00F35559 /* KakaoSDKAuth */,
+				93E9ACBF2F8A0B8E00F35559 /* KakaoSDKCommon */,
+				93E9ACC12F8A0B8E00F35559 /* KakaoSDKUser */,
 			);
 			productName = nanji_app;
 			productReference = 933D34152F7E570C0087FC8B /* nanji_app.app */;
@@ -86,14 +117,19 @@
 				};
 			};
 			buildConfigurationList = 933D34102F7E570C0087FC8B /* Build configuration list for PBXProject "nanji_app" */;
-			developmentRegion = en;
+			developmentRegion = ko;
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
 				Base,
+				ko,
 			);
 			mainGroup = 933D340C2F7E570C0087FC8B;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				931983272F88BC0A0031343A /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
+				93E9ACBC2F8A0B8E00F35559 /* XCRemoteSwiftPackageReference "kakao-ios-sdk" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 933D34162F7E570C0087FC8B /* Products */;
 			projectDirPath = "";
@@ -256,6 +292,7 @@
 				DEVELOPMENT_TEAM = 9A87KS3784;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "nanji-app-Info.plist";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -288,6 +325,7 @@
 				DEVELOPMENT_TEAM = 9A87KS3784;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "nanji-app-Info.plist";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -332,6 +370,53 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		931983272F88BC0A0031343A /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/google/GoogleSignIn-iOS";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 9.1.0;
+			};
+		};
+		93E9ACBC2F8A0B8E00F35559 /* XCRemoteSwiftPackageReference "kakao-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/kakao/kakao-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.27.2;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		931983282F88BC0A0031343A /* GoogleSignIn */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 931983272F88BC0A0031343A /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignIn;
+		};
+		9319832A2F88BC0A0031343A /* GoogleSignInSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 931983272F88BC0A0031343A /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignInSwift;
+		};
+		93E9ACBD2F8A0B8E00F35559 /* KakaoSDKAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 93E9ACBC2F8A0B8E00F35559 /* XCRemoteSwiftPackageReference "kakao-ios-sdk" */;
+			productName = KakaoSDKAuth;
+		};
+		93E9ACBF2F8A0B8E00F35559 /* KakaoSDKCommon */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 93E9ACBC2F8A0B8E00F35559 /* XCRemoteSwiftPackageReference "kakao-ios-sdk" */;
+			productName = KakaoSDKCommon;
+		};
+		93E9ACC12F8A0B8E00F35559 /* KakaoSDKUser */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 93E9ACBC2F8A0B8E00F35559 /* XCRemoteSwiftPackageReference "kakao-ios-sdk" */;
+			productName = KakaoSDKUser;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 933D340D2F7E570C0087FC8B /* Project object */;
 }
