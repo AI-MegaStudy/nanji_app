@@ -12,6 +12,7 @@
 		93E9ACBE2F8A0B8E00F35559 /* KakaoSDKAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 93E9ACBD2F8A0B8E00F35559 /* KakaoSDKAuth */; };
 		93E9ACC02F8A0B8E00F35559 /* KakaoSDKCommon in Frameworks */ = {isa = PBXBuildFile; productRef = 93E9ACBF2F8A0B8E00F35559 /* KakaoSDKCommon */; };
 		93E9ACC22F8A0B8E00F35559 /* KakaoSDKUser in Frameworks */ = {isa = PBXBuildFile; productRef = 93E9ACC12F8A0B8E00F35559 /* KakaoSDKUser */; };
+		93E9ACC52F8A16FC00F35559 /* NidThirdPartyLogin in Frameworks */ = {isa = PBXBuildFile; productRef = 93E9ACC42F8A16FC00F35559 /* NidThirdPartyLogin */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -49,6 +50,7 @@
 				9319832B2F88BC0A0031343A /* GoogleSignInSwift in Frameworks */,
 				93E9ACC22F8A0B8E00F35559 /* KakaoSDKUser in Frameworks */,
 				93E9ACBE2F8A0B8E00F35559 /* KakaoSDKAuth in Frameworks */,
+				93E9ACC52F8A16FC00F35559 /* NidThirdPartyLogin in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -96,6 +98,7 @@
 				93E9ACBD2F8A0B8E00F35559 /* KakaoSDKAuth */,
 				93E9ACBF2F8A0B8E00F35559 /* KakaoSDKCommon */,
 				93E9ACC12F8A0B8E00F35559 /* KakaoSDKUser */,
+				93E9ACC42F8A16FC00F35559 /* NidThirdPartyLogin */,
 			);
 			productName = nanji_app;
 			productReference = 933D34152F7E570C0087FC8B /* nanji_app.app */;
@@ -129,6 +132,7 @@
 			packageReferences = (
 				931983272F88BC0A0031343A /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
 				93E9ACBC2F8A0B8E00F35559 /* XCRemoteSwiftPackageReference "kakao-ios-sdk" */,
+				93E9ACC32F8A16FC00F35559 /* XCRemoteSwiftPackageReference "naveridlogin-sdk-ios-swift" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 933D34162F7E570C0087FC8B /* Products */;
@@ -287,6 +291,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = nanji_app/nanji_app.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 9A87KS3784;
@@ -320,6 +325,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = nanji_app/nanji_app.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 9A87KS3784;
@@ -388,6 +394,14 @@
 				minimumVersion = 2.27.2;
 			};
 		};
+		93E9ACC32F8A16FC00F35559 /* XCRemoteSwiftPackageReference "naveridlogin-sdk-ios-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/naver/naveridlogin-sdk-ios-swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 5.1.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -415,6 +429,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 93E9ACBC2F8A0B8E00F35559 /* XCRemoteSwiftPackageReference "kakao-ios-sdk" */;
 			productName = KakaoSDKUser;
+		};
+		93E9ACC42F8A16FC00F35559 /* NidThirdPartyLogin */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 93E9ACC32F8A16FC00F35559 /* XCRemoteSwiftPackageReference "naveridlogin-sdk-ios-swift" */;
+			productName = NidThirdPartyLogin;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
