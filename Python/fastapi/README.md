@@ -44,6 +44,21 @@ uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 - `GET /api/v1/db/status`
 - `GET /api/v1/db/tables`
 - `GET /api/v1/db/tables/{table_name}/columns`
+- `GET /api/v1/parking/lots`
+- `GET /api/v1/parking/current/{parking_lot_id}`
+- `GET /api/v1/predictions/{parking_lot_id}`
+
+## ML 반입 스크립트
+- `python scripts/build_nanji_ml_import.py`
+  - `hmw`의 테스트 예측 결과를 FastAPI 반입용 CSV/JSON으로 변환
+- `python scripts/import_nanji_group_predictions.py --dry-run`
+  - `난지전체` 예측 CSV를 DB 적재 형식으로 검증
+- `python scripts/import_nanji_group_predictions.py --create-parking-lot`
+  - 대표 `parking_lot` row가 없으면 만들고 `parking_prediction`으로 적재
+- `python scripts/insert_test_current_status.py --dry-run`
+  - 현재 상태 테스트 row를 미리 검증
+- `python scripts/insert_test_current_status.py`
+  - `parking_status_log`에 테스트용 현재 상태 1건 삽입
 
 ## 다음 단계
 1. 실제 테이블 구조 조회

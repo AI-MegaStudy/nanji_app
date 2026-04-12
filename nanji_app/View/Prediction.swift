@@ -12,6 +12,7 @@ struct PredictionView: View {
             VStack(spacing: 12) {
                 Text("1시간 후 예상 남은 자리: \(vm.oneHourLater)")
                 Text("2시간 후 예상 남은 자리: \(vm.twoHoursLater)")
+                Text("추천 방문 시간: \(vm.recommendedTime)")
             }
             .font(.headline)
             .padding()

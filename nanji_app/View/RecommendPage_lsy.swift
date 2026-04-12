@@ -1,53 +1,90 @@
 import SwiftUI
 import MapKit
+import CoreLocation
+import Combine
 
 struct RecommendPage: View {
-    private let parkingLots: [ParkingLotItem] = [
-        ParkingLotItem(
-            id: "1",
-            name: "난지 캠핑장 주차장",
-            distance: 0.8,
-            available: 89,
-            total: 150,
-            estimatedTime: 2,
-            coordinate: CLLocationCoordinate2D(latitude: 37.5665, longitude: 126.8760)
-        ),
-        ParkingLotItem(
-            id: "2",
-            name: "하늘공원 주차장",
-            distance: 1.2,
-            available: 45,
-            total: 120,
-            estimatedTime: 3,
-            coordinate: CLLocationCoordinate2D(latitude: 37.5684, longitude: 126.8787)
-        ),
-        ParkingLotItem(
-            id: "3",
-            name: "월드컵공원 주차장",
-            distance: 1.5,
-            available: 12,
-            total: 180,
-            estimatedTime: 4,
-            coordinate: CLLocationCoordinate2D(latitude: 37.5702, longitude: 126.8815)
-        )
-    ]
+    let parkingLots: [ParkingLotAPIItem]
+    private let previewOrigin = CLLocation(latitude: 37.5499, longitude: 126.9136)
 
-    @State private var selectedLotID: String = "1"
+    @StateObject private var locationManager = LocationManager()
+    @State private var selectedLotID: Int?
     @State private var cameraPosition: MapCameraPosition = .region(
         MKCoordinateRegion(
-            center: CLLocationCoordinate2D(latitude: 37.5665, longitude: 126.8760),
-            span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
+            center: CLLocationCoordinate2D(latitude: 37.5686, longitude: 126.8789),
+            span: MKCoordinateSpan(latitudeDelta: 0.02, longitudeDelta: 0.02)
         )
     )
+    @State private var routeInfoByLotID: [Int: AlternativeRouteInfo] = [:]
+    @State private var statusByLotID: [Int: ParkingStatus] = [:]
 
-    private var selectedLot: ParkingLotItem? {
-        parkingLots.first { $0.id == selectedLotID }
+    private var displayLots: [AlternativeParkingLotItem] {
+        let mapped = parkingLots.enumerated().map { index, lot in
+            AlternativeParkingLotItem.make(
+                from: lot,
+                index: index,
+                routeInfo: routeInfoByLotID[lot.pID],
+                status: statusByLotID[lot.pID]
+            )
+        }
+
+        if !mapped.isEmpty {
+            return mapped
+        }
+
+        return [
+            AlternativeParkingLotItem(
+                id: 2,
+                name: "난지 캠핑장 주차장",
+                address: "서울특별시 마포구 상암동 난지한강공원 일대",
+                distance: 0.8,
+                available: 89,
+                total: 150,
+                estimatedTime: 2,
+                coordinate: CLLocationCoordinate2D(latitude: 37.5700, longitude: 126.8795),
+                hasCurrentData: false,
+                currentMessage: nil,
+                statusLabel: nil
+            ),
+            AlternativeParkingLotItem(
+                id: 3,
+                name: "하늘공원 주차장",
+                address: "서울특별시 마포구 하늘공원로 일대",
+                distance: 1.2,
+                available: 45,
+                total: 120,
+                estimatedTime: 3,
+                coordinate: CLLocationCoordinate2D(latitude: 37.5697, longitude: 126.8780),
+                hasCurrentData: false,
+                currentMessage: nil,
+                statusLabel: nil
+            ),
+            AlternativeParkingLotItem(
+                id: 4,
+                name: "월드컵공원 주차장",
+                address: "서울특별시 마포구 월드컵로 일대",
+                distance: 1.5,
+                available: 12,
+                total: 180,
+                estimatedTime: 4,
+                coordinate: CLLocationCoordinate2D(latitude: 37.5710, longitude: 126.8810),
+                hasCurrentData: false,
+                currentMessage: nil,
+                statusLabel: nil
+            )
+        ]
+    }
+
+    private var selectedLot: AlternativeParkingLotItem? {
+        let fallbackID = displayLots.first?.id
+        let targetID = selectedLotID ?? fallbackID
+        return displayLots.first { $0.id == targetID }
     }
 
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Text("한강공원 주차장")
+                Text("자리난지")
                     .font(.title3)
                     .fontWeight(.semibold)
                     .foregroundColor(.white)
@@ -74,10 +111,10 @@ struct RecommendPage: View {
                         }
 
                         VStack(spacing: 12) {
-                            ForEach(parkingLots) { lot in
+                            ForEach(displayLots) { lot in
                                 ParkingCard(
                                     lot: lot,
-                                    isSelected: lot.id == selectedLotID,
+                                    isSelected: lot.id == (selectedLotID ?? displayLots.first?.id),
                                     onTap: {
                                         focus(on: lot)
                                     }
@@ -105,9 +142,9 @@ struct RecommendPage: View {
                         }
 
                         Map(position: $cameraPosition) {
-                            ForEach(parkingLots) { lot in
+                            ForEach(displayLots) { lot in
                                 Marker(lot.name, coordinate: lot.coordinate)
-                                    .tint(lot.id == selectedLotID ? .red : .blue)
+                                    .tint(lot.id == (selectedLotID ?? displayLots.first?.id) ? .red : .blue)
                             }
                         }
                         .frame(height: 260)
@@ -124,13 +161,21 @@ struct RecommendPage: View {
         }
         .background(Color(.systemGroupedBackground).ignoresSafeArea())
         .onAppear {
+            locationManager.requestWhenInUseAuthorization()
+            locationManager.startUpdatingLocation()
+            loadAlternativeStatuses()
+            updateRouteInfo(from: normalizedOriginLocation(locationManager.currentLocation))
             if let selectedLot {
                 focus(on: selectedLot, animated: false)
             }
         }
+        .onReceive(locationManager.$currentLocation.compactMap { $0 }) { location in
+            updateRouteInfo(from: normalizedOriginLocation(location))
+        }
+        .navigationBarBackButtonHidden(false)
     }
 
-    private func focus(on lot: ParkingLotItem, animated: Bool = true) {
+    private func focus(on lot: AlternativeParkingLotItem, animated: Bool = true) {
         selectedLotID = lot.id
 
         let nextPosition = MapCameraPosition.region(
@@ -148,18 +193,128 @@ struct RecommendPage: View {
             cameraPosition = nextPosition
         }
     }
+
+    private func updateRouteInfo(from location: CLLocation) {
+        for lot in parkingLots {
+            let destinationLocation = CLLocation(latitude: lot.pLatitude, longitude: lot.pLongitude)
+            let directDistanceKilometers = location.distance(from: destinationLocation) / 1000
+            let fallbackMinutes = fallbackTravelMinutes(for: directDistanceKilometers)
+            let destinationCoordinate = CLLocationCoordinate2D(latitude: lot.pLatitude, longitude: lot.pLongitude)
+            let request = MKDirections.Request()
+            request.source = MKMapItem(placemark: MKPlacemark(coordinate: location.coordinate))
+            request.destination = MKMapItem(placemark: MKPlacemark(coordinate: destinationCoordinate))
+            request.transportType = .automobile
+
+            let directions = MKDirections(request: request)
+            directions.calculateETA { response, _ in
+                let route: AlternativeRouteInfo
+
+                if let response {
+                    route = AlternativeRouteInfo(
+                        distanceKilometers: response.distance / 1000,
+                        travelMinutes: max(Int(round(response.expectedTravelTime / 60)), 1)
+                    )
+                } else {
+                    route = AlternativeRouteInfo(
+                        distanceKilometers: directDistanceKilometers,
+                        travelMinutes: fallbackMinutes
+                    )
+                }
+
+                Task { @MainActor in
+                    routeInfoByLotID[lot.pID] = route
+                }
+            }
+        }
+    }
+
+    private func normalizedOriginLocation(_ location: CLLocation?) -> CLLocation {
+        guard let location else { return previewOrigin }
+
+        let latitude = location.coordinate.latitude
+        let longitude = location.coordinate.longitude
+
+        if latitude == 0, longitude == 0 {
+            return previewOrigin
+        }
+
+        if location.horizontalAccuracy < 0 {
+            return previewOrigin
+        }
+
+        if location.distance(from: previewOrigin) > 30_000 {
+            return previewOrigin
+        }
+
+        return location
+    }
+
+    private func fallbackTravelMinutes(for distanceKilometers: Double) -> Int {
+        max(Int(round((distanceKilometers / 30.0) * 60.0)), 1)
+    }
+
+    private func loadAlternativeStatuses() {
+        for lot in parkingLots {
+            APIService.shared.fetchCurrentStatus(parkingLotID: lot.pID) { result in
+                switch result {
+                case .success(let status):
+                    Task { @MainActor in
+                        statusByLotID[lot.pID] = status
+                    }
+                case .failure:
+                    break
+                }
+            }
+        }
+    }
 }
 
-private struct ParkingLotItem: Identifiable {
-    let id: String
+private struct AlternativeParkingLotItem: Identifiable {
+    let id: Int
     let name: String
+    let address: String?
     let distance: Double
     let available: Int
     let total: Int
     let estimatedTime: Int
     let coordinate: CLLocationCoordinate2D
+    let hasCurrentData: Bool
+    let currentMessage: String?
+    let statusLabel: String?
+
+    static func make(
+        from lot: ParkingLotAPIItem,
+        index: Int,
+        routeInfo: AlternativeRouteInfo?,
+        status: ParkingStatus?
+    ) -> AlternativeParkingLotItem {
+        let presetAvailable = [89, 45, 12][min(index, 2)]
+        let fallbackTotal = max(lot.pTotalSpaces, [150, 120, 180][min(index, 2)])
+        let available = status?.hasData == true ? (status?.availableSpaces ?? 0) : presetAvailable
+        let total = status?.hasData == true ? max(status?.totalSpaces ?? 0, lot.pTotalSpaces) : fallbackTotal
+
+        return AlternativeParkingLotItem(
+            id: lot.pID,
+            name: lot.pDisplayName,
+            address: lot.pAddress,
+            distance: routeInfo?.distanceKilometers ?? 0,
+            available: available,
+            total: total,
+            estimatedTime: routeInfo?.travelMinutes ?? 0,
+            coordinate: CLLocationCoordinate2D(latitude: lot.pLatitude, longitude: lot.pLongitude),
+            hasCurrentData: status?.hasData ?? false,
+            currentMessage: status?.message,
+            statusLabel: status?.congestionLevel
+        )
+    }
 
     var status: ParkingLotStatus {
+        guard hasCurrentData else { return .pending }
+
+        if let statusLabel {
+            return ParkingLotStatus(label: statusLabel)
+        }
+
         let ratio = Double(available) / Double(total)
         if ratio > 0.5 { return .available }
         if ratio > 0.2 { return .moderate }
@@ -167,10 +322,31 @@ private struct ParkingLotItem: Identifiable {
     }
 }
 
+private struct AlternativeRouteInfo {
+    let distanceKilometers: Double
+    let travelMinutes: Int
+}
+
 private enum ParkingLotStatus {
     case available
     case moderate
     case busy
+    case pending
+
+    init(label: String) {
+        switch label {
+        case "여유":
+            self = .available
+        case "보통":
+            self = .moderate
+        case "혼잡", "매우 혼잡":
+            self = .busy
+        case "정보 준비 중":
+            self = .pending
+        default:
+            self = .moderate
+        }
+    }
 
     var label: String {
         switch self {
@@ -180,6 +356,8 @@ private enum ParkingLotStatus {
             return "보통"
         case .busy:
             return "혼잡"
+        case .pending:
+            return "정보 준비 중"
         }
     }
 
@@ -191,6 +369,8 @@ private enum ParkingLotStatus {
             return Color(hex: "#E8D878")
         case .busy:
             return Color(hex: "#CD6355")
+        case .pending:
+            return Color.gray
         }
     }
 
@@ -204,12 +384,25 @@ private enum ParkingLotStatus {
 }
 
 private struct ParkingCard: View {
-    let lot: ParkingLotItem
+    let lot: AlternativeParkingLotItem
     let isSelected: Bool
     let onTap: () -> Void
 
     private var occupancyRate: Double {
         Double(lot.available) / Double(lot.total)
+    }
+
+    private func formattedTravelTime(_ minutes: Int) -> String {
+        if minutes >= 60 {
+            let hours = minutes / 60
+            let remainingMinutes = minutes % 60
+            if remainingMinutes == 0 {
+                return "약 \(hours)시간"
+            }
+            return "약 \(hours)시간 \(remainingMinutes)분"
+        }
+
+        return "약 \(minutes)분"
     }
 
     var body: some View {
@@ -222,8 +415,14 @@ private struct ParkingCard: View {
                             .foregroundColor(.primary)
 
                         HStack(spacing: 12) {
-                            Label("\(lot.distance, specifier: "%.1f")km", systemImage: "location")
-                            Label("약 \(lot.estimatedTime)분", systemImage: "clock")
+                            Label(
+                                lot.distance > 0 ? "\(lot.distance, specifier: "%.1f")km" : "거리 계산 중",
+                                systemImage: "location"
+                            )
+                            Label(
+                                lot.estimatedTime > 0 ? formattedTravelTime(lot.estimatedTime) : "시간 계산 중",
+                                systemImage: "clock"
+                            )
                         }
                         .font(.caption)
                         .foregroundColor(.gray)
@@ -252,13 +451,21 @@ private struct ParkingCard: View {
 
                     Spacer()
 
-                    Text("\(lot.available) / \(lot.total)")
-                        .font(.headline)
-                        .foregroundColor(.primary)
+                    if lot.hasCurrentData {
+                        Text("\(lot.available) / \(lot.total)")
+                            .font(.headline)
+                            .foregroundColor(.primary)
+                    } else {
+                        Text("정보 준비 중")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    }
                 }
 
-                ProgressView(value: occupancyRate)
-                    .tint(lot.status.color)
+                if lot.hasCurrentData {
+                    ProgressView(value: occupancyRate)
+                        .tint(lot.status.color)
+                }
             }
             .padding()
             .background(isSelected ? Color(hex: "#EEF8FD") : Color.white)
@@ -306,5 +513,38 @@ private extension Color {
 }
 
 #Preview {
-    RecommendPage()
+    RecommendPage(
+        parkingLots: [
+            ParkingLotAPIItem(
+                pID: 2,
+                pName: "난지캠핑장",
+                pDisplayName: "난지 캠핑장 주차장",
+                pAddress: "서울특별시 마포구 상암동 난지한강공원 일대",
+                pLatitude: 37.5700,
+                pLongitude: 126.8795,
+                pTotalSpaces: 300,
+                pSupportsPrediction: false
+            ),
+            ParkingLotAPIItem(
+                pID: 3,
+                pName: "하늘공원",
+                pDisplayName: "하늘공원 주차장",
+                pAddress: "서울특별시 마포구 하늘공원로 일대",
+                pLatitude: 37.5697,
+                pLongitude: 126.8780,
+                pTotalSpaces: 250,
+                pSupportsPrediction: false
+            ),
+            ParkingLotAPIItem(
+                pID: 4,
+                pName: "월드컵공원",
+                pDisplayName: "월드컵공원 주차장",
+                pAddress: "서울특별시 마포구 월드컵로 일대",
+                pLatitude: 37.5710,
+                pLongitude: 126.8810,
+                pTotalSpaces: 250,
+                pSupportsPrediction: false
+            )
+        ]
+    )
 }

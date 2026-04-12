@@ -52,10 +52,6 @@ struct HourlyAnalysisView: View {
                     .foregroundColor(Color(red: 0.49, green: 0.83, blue: 0.99))
             }
 
-            Text("FastAPI 예측 응답 기반 화면")
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-
             if let analysis {
                 Text("\(analysis.parkingZone.uppercased()) · \(analysis.generatedAtText)")
                     .font(.caption)
@@ -70,11 +66,11 @@ struct HourlyAnalysisView: View {
     }
 
     private var loadingCard: some View {
-        VStack(spacing: 14) {
+            VStack(spacing: 14) {
             ProgressView()
                 .progressViewStyle(.circular)
 
-            Text("시간대별 예측 데이터를 불러오는 중입니다.")
+            Text("시간대별 정보를 불러오고 있어요.")
                 .font(.subheadline)
                 .foregroundColor(.secondary)
         }
@@ -90,7 +86,7 @@ struct HourlyAnalysisView: View {
             Text("데이터를 불러오지 못했습니다")
                 .font(.headline)
 
-            Text(errorMessage ?? "FastAPI 응답을 확인한 뒤 다시 시도해 주세요.")
+            Text(errorMessage ?? "잠시 후 다시 시도해 주세요.")
                 .font(.subheadline)
                 .foregroundColor(.secondary)
 
@@ -227,7 +223,7 @@ struct HourlyAnalysisView: View {
             HStack(spacing: 4) {
                 Text("예상 차량:")
                     .foregroundColor(.secondary)
-                Text("\(format(item.predictedActiveCars))대")
+                Text("\(Int(round(item.predictedActiveCars)))대")
                     .fontWeight(.semibold)
                     .foregroundColor(.primary)
             }

@@ -11,6 +11,7 @@ final class AuthStore: ObservableObject {
     @Published private(set) var currentUserName: String
     @Published private(set) var provider: AuthProvider?
     @Published private(set) var currentUserEmail: String?
+    @Published private(set) var backendUserID: Int?
     @Published var errorMessage: String?
     @Published private(set) var appleUserID: String?
 
@@ -22,6 +23,7 @@ final class AuthStore: ObservableObject {
     private let appleUserIDKey = "auth.apple.userID"
     private let appleNameKey = "auth.apple.name"
     private let appleEmailKey = "auth.apple.email"
+    private let backendUserIDKey = "auth.backendUserID"
 
     init() {
         let storedProvider = defaults.string(forKey: providerKey).flatMap(AuthProvider.init(rawValue:))
@@ -30,12 +32,15 @@ final class AuthStore: ObservableObject {
         self.provider = storedProvider
         self.currentUserEmail = defaults.string(forKey: userEmailKey)
         self.appleUserID = defaults.string(forKey: appleUserIDKey)
+        let storedBackendUserID = defaults.integer(forKey: backendUserIDKey)
+        self.backendUserID = storedBackendUserID > 0 ? storedBackendUserID : nil
 
         if !isLoggedIn {
             currentUserName = "방문자"
             provider = nil
             currentUserEmail = nil
             appleUserID = nil
+            backendUserID = nil
         }
     }
 
@@ -62,7 +67,7 @@ final class AuthStore: ObservableObject {
             apply(user: user)
 
             do {
-                try await APIService.shared.upsertSocialLogin(
+                let response = try await APIService.shared.upsertSocialLogin(
                     SocialLoginPayload(
                         provider: user.provider.rawValue,
                         providerUserId: user.providerUserId,
@@ -73,8 +78,13 @@ final class AuthStore: ObservableObject {
                         idToken: user.idToken
                     )
                 )
+                backendUserID = response.userID
+                defaults.set(response.userID, forKey: backendUserIDKey)
             } catch {
-                errorMessage = "\(user.provider.title) 로그인은 성공했지만 서버 저장은 실패했습니다."
+                APIService.shared.setAuthenticatedUserID(nil)
+                backendUserID = nil
+                defaults.removeObject(forKey: backendUserIDKey)
+                errorMessage = "\(user.provider.title) 로그인은 되었지만 계정 연동 중 문제가 발생했습니다."
             }
         } catch {
             errorMessage = AuthErrorMessageMapper.message(for: error, provider: provider)
@@ -96,6 +106,7 @@ final class AuthStore: ObservableObject {
         provider = nil
         currentUserEmail = nil
         appleUserID = nil
+        backendUserID = nil
 
         defaults.removeObject(forKey: isLoggedInKey)
         defaults.removeObject(forKey: userNameKey)
@@ -104,6 +115,8 @@ final class AuthStore: ObservableObject {
         defaults.removeObject(forKey: appleUserIDKey)
         defaults.removeObject(forKey: appleNameKey)
         defaults.removeObject(forKey: appleEmailKey)
+        defaults.removeObject(forKey: backendUserIDKey)
+        APIService.shared.setAuthenticatedUserID(nil)
     }
 
     private func apply(user: AuthUser) {

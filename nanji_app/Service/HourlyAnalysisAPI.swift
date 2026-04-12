@@ -3,20 +3,18 @@ import Foundation
 struct HourlyAnalysisAPI {
     var baseURL: URL = URL(string: "http://127.0.0.1:8000")!
     var session: URLSession = .shared
+    var parkingLotID: Int = 1
 
     func fetchHourlyAnalysis(request: HourlyAnalysisRequest = .sample) async throws -> HourlyAnalysisResponse {
-        let requestURL = baseURL.appendingPathComponent("predict")
-        var urlRequest = URLRequest(url: requestURL)
-        urlRequest.httpMethod = "POST"
-        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        urlRequest.httpBody = try encode(request)
+        let requestURL = baseURL.appendingPathComponent("api/v1/predictions/\(parkingLotID)")
+        let urlRequest = URLRequest(url: requestURL)
 
         do {
             let (data, response) = try await session.data(for: urlRequest)
             try validate(response: response)
-            return try decode(data)
+            let decoded = try decodePredictionList(data)
+            return buildHourlyAnalysis(from: decoded)
         } catch {
-            // FastAPI 예시 서버가 아직 연결되지 않았어도 화면 구성을 이어갈 수 있도록 예시 응답을 사용한다.
             return try decode(Self.samplePayload)
         }
     }
@@ -31,16 +29,108 @@ struct HourlyAnalysisAPI {
         }
     }
 
-    private func encode(_ request: HourlyAnalysisRequest) throws -> Data {
-        let encoder = JSONEncoder()
-        encoder.keyEncodingStrategy = .convertToSnakeCase
-        return try encoder.encode(request)
-    }
-
     private func decode(_ data: Data) throws -> HourlyAnalysisResponse {
         let decoder = JSONDecoder()
         decoder.keyDecodingStrategy = .convertFromSnakeCase
         return try decoder.decode(HourlyAnalysisResponse.self, from: data)
+    }
+
+    private func decodePredictionList(_ data: Data) throws -> ParkingPredictionListResponse {
+        let decoder = JSONDecoder()
+        return try decoder.decode(ParkingPredictionListResponse.self, from: data)
+    }
+
+    private func buildHourlyAnalysis(from response: ParkingPredictionListResponse) -> HourlyAnalysisResponse {
+        let sortedItems = response.items.sorted { $0.ppPredictedTime < $1.ppPredictedTime }
+        let selectedItems = selectForecastWindow(from: sortedItems)
+        let syntheticDatesByID = syntheticTimelineByPredictionID(for: selectedItems)
+
+        let hourlyData = selectedItems.map { item in
+            let date = syntheticDatesByID[item.ppID] ?? Self.predictionDateFormatter.date(from: item.ppPredictedTime) ?? Date()
+            return HourlyAnalysisPoint(
+                time: HourlyAnalysisDateFormatter.hourText(from: date),
+                predictedActiveCars: Double(item.ppPredictedOccupiedSpaces),
+                predictedCongestionPercent: Double(item.ppPredictedOccupancyRate) ?? 0,
+                predictedAvailableSpaces: item.ppPredictedAvailableSpaces,
+                isPrediction: true
+            )
+        }
+
+        let peakItem = hourlyData.max { lhs, rhs in
+            lhs.occupancyValue < rhs.occupancyValue
+        }
+
+        let bestItem = hourlyData.max { lhs, rhs in
+            lhs.availableSpacesValue < rhs.availableSpacesValue
+        }
+
+        let firstItem = hourlyData.first
+
+        return HourlyAnalysisResponse(
+            parkingZone: "난지 메인 주차장",
+            targetTime: Self.isoOutputFormatter.string(from: syntheticDatesByID[selectedItems.first?.ppID ?? -1] ?? Date()),
+            generatedAt: Self.isoOutputFormatter.string(from: Date()),
+            predictedActiveCars: firstItem?.predictedActiveCars ?? 0,
+            hourlyData: hourlyData,
+            peakTime: peakItem?.time ?? "데이터 준비 중",
+            recommendedTimeWindow: bestItem?.time ?? "데이터 준비 중",
+            modelInfo: HourlyAnalysisModelInfo(
+                modelName: selectedItems.first?.ppModelVersion ?? "weighted_core_v1_test_import",
+                r2: 0.0,
+                rmse: 0.0,
+                mae: 0.0,
+                evaluatedOn: "prediction_import"
+            ),
+            predictedCongestionPercent: firstItem?.predictedCongestionPercent,
+            predictedAvailableSpaces: firstItem?.predictedAvailableSpaces
+        )
+    }
+
+    private func selectForecastWindow(from items: [ParkingPredictionItem]) -> [ParkingPredictionItem] {
+        guard !items.isEmpty else { return [] }
+
+        let parsedItems = items.compactMap { item -> (ParkingPredictionItem, Date)? in
+            guard let date = Self.predictionDateFormatter.date(from: item.ppPredictedTime) else { return nil }
+            return (item, date)
+        }
+
+        guard !parsedItems.isEmpty else {
+            return Array(items.prefix(24))
+        }
+
+        let now = Date()
+
+        if let futureIndex = parsedItems.firstIndex(where: { $0.1 >= now }) {
+            return Array(parsedItems[futureIndex..<min(futureIndex + 24, parsedItems.count)]).map(\.0)
+        }
+
+        let nextHour = (Calendar.current.component(.hour, from: now) + 1) % 24
+        if let nearestByHourIndex = parsedItems.firstIndex(where: {
+            Calendar.current.component(.hour, from: $0.1) >= nextHour
+        }) {
+            return Array(parsedItems[nearestByHourIndex..<min(nearestByHourIndex + 24, parsedItems.count)]).map(\.0)
+        }
+
+        return Array(parsedItems.prefix(24)).map(\.0)
+    }
+
+    private func syntheticTimelineByPredictionID(for items: [ParkingPredictionItem]) -> [Int: Date] {
+        guard !items.isEmpty else { return [:] }
+
+        let calendar = Calendar.current
+        let now = Date()
+        let startOfCurrentHour = calendar.date(
+            bySettingHour: calendar.component(.hour, from: now),
+            minute: 0,
+            second: 0,
+            of: now
+        ) ?? now
+        let firstDisplayDate = calendar.date(byAdding: .hour, value: 1, to: startOfCurrentHour) ?? now
+
+        return Dictionary(uniqueKeysWithValues: items.enumerated().map { index, item in
+            let displayDate = calendar.date(byAdding: .hour, value: index, to: firstDisplayDate) ?? firstDisplayDate
+            return (item.ppID, displayDate)
+        })
     }
 }
 
@@ -109,4 +199,18 @@ extension HourlyAnalysisAPI {
       "predicted_available_spaces": 388
     }
     """.utf8)
+
+    private static let predictionDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "ko_KR")
+        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        return formatter
+    }()
+
+    private static let isoOutputFormatter: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime]
+        formatter.timeZone = TimeZone(identifier: "Asia/Seoul")
+        return formatter
+    }()
 }

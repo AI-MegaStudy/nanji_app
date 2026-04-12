@@ -30,3 +30,25 @@ class ParkingLotItem(BaseModel):
 class ParkingLotListResponse(BaseModel):
     count: int
     items: list[ParkingLotItem]
+
+
+class ParkingCurrentStatusItem(BaseModel):
+    ps_id: int
+    ps_parking_lot_id: int
+    ps_recorded_at: str
+    ps_occupied_spaces: int
+    ps_available_spaces: int
+    ps_occupancy_rate: Decimal
+    ps_congestion_level: str
+    ps_source_type: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ParkingCurrentStatusResponse(BaseModel):
+    parking_lot_id: int
+    parking_lot_name: str
+    supports_realtime_congestion: bool
+    has_data: bool
+    item: Optional[ParkingCurrentStatusItem] = None
+    message: Optional[str] = None

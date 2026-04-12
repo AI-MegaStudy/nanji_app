@@ -2,26 +2,38 @@ import SwiftUI
 
 struct HomeView: View {
     @StateObject private var vm = ParkingViewModel()
+    @State private var showDataNotice = false
+    @State private var hideDataNoticePermanently = false
+    @AppStorage("hide_home_data_notice") private var hideHomeDataNotice = false
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
-                topBar
+            ZStack {
+                VStack(spacing: 0) {
+                    topBar
 
-                ScrollView(showsIndicators: false) {
-                    VStack(spacing: 16) {
-                        mainStatusCard
-                        futureSection
-                        actionSection
-                        favoriteSection
+                    ScrollView(showsIndicators: false) {
+                        VStack(spacing: 16) {
+                            mainStatusCard
+                            futureSection
+                            actionSection
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.top, 16)
+                        .padding(.bottom, 30)
+                        .frame(maxWidth: .infinity)
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 16)
-                    .padding(.bottom, 30)
-                    .frame(maxWidth: .infinity)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color(.systemGroupedBackground))
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color(.systemGroupedBackground))
+
+                if showDataNotice {
+                    Color.black.opacity(0.24)
+                        .ignoresSafeArea()
+
+                    dataNoticeOverlay
+                        .padding(.horizontal, 24)
+                }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Color(.systemGroupedBackground).ignoresSafeArea())
@@ -29,13 +41,98 @@ struct HomeView: View {
             .onAppear {
                 NotificationManager.shared.requestPermission()
                 vm.loadCurrentStatus()
+                vm.loadPrediction()
+                vm.loadParkingLots()
+                if !hideHomeDataNotice && !showDataNotice {
+                    showDataNotice = true
+                }
             }
+        }
+    }
+
+    private var dataNoticeOverlay: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            HStack(spacing: 10) {
+                ZStack {
+                    Circle()
+                        .fill(Color(red: 0.30, green: 0.62, blue: 0.96).opacity(0.12))
+                        .frame(width: 40, height: 40)
+
+                    Image(systemName: "info.circle.fill")
+                        .font(.title3)
+                        .foregroundColor(Color(red: 0.30, green: 0.62, blue: 0.96))
+                }
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("서비스 안내")
+                        .font(.headline)
+                        .fontWeight(.bold)
+
+                    Text("예측 기반 정보가 포함되어 있어요")
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                }
+
+                Spacer()
+            }
+
+            VStack(alignment: .leading, spacing: 12) {
+                noticeLine(
+                    icon: "chart.line.uptrend.xyaxis",
+                    text: "예측 수치는 현재 예측 데이터 기준으로 제공됩니다."
+                )
+                noticeLine(
+                    icon: "clock.badge.exclamationmark",
+                    text: "일부 주차장 정보는 아직 준비 중이며 추후 반영될 예정입니다."
+                )
+            }
+
+            Toggle(isOn: $hideDataNoticePermanently) {
+                Text("다시 보지 않기")
+                    .font(.subheadline)
+                    .foregroundColor(.primary)
+            }
+            .tint(Color(red: 0.30, green: 0.62, blue: 0.96))
+
+            Button {
+                if hideDataNoticePermanently {
+                    hideHomeDataNotice = true
+                }
+                showDataNotice = false
+            } label: {
+                Text("확인")
+                    .font(.headline)
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+                    .background(Color(red: 0.30, green: 0.62, blue: 0.96))
+                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(22)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .shadow(color: Color.black.opacity(0.12), radius: 20, x: 0, y: 12)
+    }
+
+    private func noticeLine(icon: String, text: String) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: icon)
+                .font(.subheadline)
+                .foregroundColor(Color(red: 0.30, green: 0.62, blue: 0.96))
+                .frame(width: 18)
+
+            Text(text)
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
     private var topBar: some View {
         HStack(spacing: 0) {
-            Text("한강공원 주차장")
+            Text("자리난지")
                 .font(.title3)
                 .fontWeight(.semibold)
                 .foregroundColor(.white)
@@ -70,22 +167,22 @@ struct HomeView: View {
     private var mainStatusCard: some View {
         VStack(alignment: .leading, spacing: 22) {
             HStack(alignment: .top) {
-                Text("난지 주차장")
+                Text(vm.parkingName)
                     .font(.title3)
                     .fontWeight(.bold)
                     .foregroundColor(.primary)
 
                 Spacer()
 
-                statusTag(title: "혼잡", color: Color(red: 0.98, green: 0.82, blue: 0.72), textColor: Color(red: 0.80, green: 0.40, blue: 0.20))
+                statusTag(title: vm.congestionLevel, color: congestionTagBackground, textColor: congestionTagTextColor)
             }
 
             HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text("42")
+                Text("\(vm.availableSpaces)")
                     .font(.system(size: 54, weight: .bold, design: .rounded))
                     .foregroundColor(Color(red: 0.08, green: 0.13, blue: 0.24))
 
-                Text("/ 250대")
+                Text("/ \(vm.totalSpaces)대")
                     .font(.title3)
                     .foregroundColor(.secondary)
             }
@@ -95,6 +192,12 @@ struct HomeView: View {
                 .foregroundColor(.secondary)
 
             progressBar
+
+            if !vm.currentStatusMessage.isEmpty {
+                Text(vm.currentStatusMessage)
+                    .font(.footnote)
+                    .foregroundColor(.secondary)
+            }
         }
         .padding(22)
         .background(Color.white)
@@ -111,7 +214,7 @@ struct HomeView: View {
 
                 Capsule()
                     .fill(Color(red: 0.94, green: 0.60, blue: 0.34))
-                    .frame(width: proxy.size.width * 0.168, height: 12)
+                    .frame(width: proxy.size.width * vm.occupancyProgress, height: 12)
             }
         }
         .frame(height: 12)
@@ -138,7 +241,7 @@ struct HomeView: View {
                             .font(.subheadline)
                             .foregroundColor(.secondary)
 
-                        Text("18대")
+                        Text("\(vm.oneHourLater)대")
                             .font(.title)
                             .fontWeight(.bold)
                             .foregroundColor(Color(red: 0.08, green: 0.13, blue: 0.24))
@@ -146,7 +249,7 @@ struct HomeView: View {
 
                     Spacer()
 
-                    statusTag(title: "매우 혼잡", color: Color(red: 0.99, green: 0.88, blue: 0.86), textColor: Color(red: 0.78, green: 0.29, blue: 0.17))
+                    statusTag(title: predictedStatus, color: predictedStatusBackground, textColor: predictedStatusTextColor)
                 }
                 .padding(18)
                 .background(Color.white)
@@ -165,7 +268,7 @@ struct HomeView: View {
                             .font(.subheadline)
                             .foregroundColor(.secondary)
 
-                        Text("17:00")
+                        Text(vm.busyTime.isEmpty ? "데이터 준비 중" : vm.busyTime)
                             .font(.headline)
                             .fontWeight(.bold)
                             .foregroundColor(Color(red: 0.86, green: 0.32, blue: 0.23))
@@ -186,35 +289,27 @@ struct HomeView: View {
 
     private var actionSection: some View {
         VStack(spacing: 12) {
-            actionRow(icon: "location.fill", title: "대체 주차장 보기", subtitle: "주변 주차장 추천")
-            actionRow(icon: "clock.fill", title: "출발 타이밍 추천", subtitle: "언제 출발해야 할까요?")
-            actionRow(icon: "chart.bar.fill", title: "시간대별 분석", subtitle: "예측 그래프 보기")
-        }
-    }
-
-    private var favoriteSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text("즐겨찾기")
-                    .font(.headline)
-                    .fontWeight(.bold)
-
-                Spacer()
-
-                Text("설정")
-                    .font(.footnote)
-                    .foregroundColor(Color.blue)
+            NavigationLink {
+                RecommendPage(parkingLots: vm.alternativeParkingLots)
+            } label: {
+                actionRow(icon: "location.fill", title: "대체 주차장 보기", subtitle: "")
             }
+            .buttonStyle(.plain)
 
-            Text("자주 가는 주차장을 저장하세요")
-                .font(.subheadline)
-                .foregroundColor(.secondary)
+            NavigationLink {
+                TimingPage(vm: vm)
+            } label: {
+                actionRow(icon: "clock.fill", title: "출발 타이밍 추천", subtitle: "언제 출발해야 할까요?")
+            }
+            .buttonStyle(.plain)
+
+            NavigationLink {
+                HourlyAnalysisView()
+            } label: {
+                actionRow(icon: "chart.bar.fill", title: "시간대별 분석", subtitle: "예측 그래프 보기")
+            }
+            .buttonStyle(.plain)
         }
-        .padding(18)
-        .frame(maxWidth: .infinity)
-        .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-        .shadow(color: Color.black.opacity(0.04), radius: 12, x: 0, y: 6)
     }
 
     private func statusTag(title: String, color: Color, textColor: Color) -> some View {
@@ -244,9 +339,11 @@ struct HomeView: View {
                 Text(title)
                     .font(.headline)
                     .foregroundColor(.primary)
-                Text(subtitle)
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
+                if !subtitle.isEmpty {
+                    Text(subtitle)
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
             }
 
             Spacer()
@@ -303,9 +400,9 @@ private extension HomeView {
     }
 
     var predictedStatus: String {
-        if vm.availableSpaces >= 30 {
+        if vm.oneHourLater >= 100 {
             return "안정적"
-        } else if vm.availableSpaces >= 10 {
+        } else if vm.oneHourLater >= 30 {
             return "주의"
         } else {
             return "혼잡 예상"
@@ -313,12 +410,60 @@ private extension HomeView {
     }
 
     var recommendationText: String {
-        if vm.availableSpaces >= 30 {
+        if vm.oneHourLater >= 100 {
             return "바로 방문 추천"
-        } else if vm.availableSpaces >= 10 {
+        } else if vm.oneHourLater >= 30 {
             return "출발 전 확인"
         } else {
             return "대체 주차장 검토"
+        }
+    }
+
+    var congestionTagBackground: Color {
+        switch vm.congestionLevel {
+        case "여유":
+            return Color.green.opacity(0.18)
+        case "보통":
+            return Color.orange.opacity(0.18)
+        case "혼잡", "매우 혼잡":
+            return Color.red.opacity(0.16)
+        default:
+            return Color.gray.opacity(0.15)
+        }
+    }
+
+    var congestionTagTextColor: Color {
+        switch vm.congestionLevel {
+        case "여유":
+            return .green
+        case "보통":
+            return .orange
+        case "혼잡", "매우 혼잡":
+            return .red
+        default:
+            return .gray
+        }
+    }
+
+    var predictedStatusBackground: Color {
+        switch predictedStatus {
+        case "안정적":
+            return Color.green.opacity(0.18)
+        case "주의":
+            return Color.orange.opacity(0.18)
+        default:
+            return Color.red.opacity(0.16)
+        }
+    }
+
+    var predictedStatusTextColor: Color {
+        switch predictedStatus {
+        case "안정적":
+            return .green
+        case "주의":
+            return .orange
+        default:
+            return .red
         }
     }
 }

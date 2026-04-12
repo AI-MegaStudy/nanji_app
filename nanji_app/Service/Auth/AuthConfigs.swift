@@ -21,7 +21,7 @@ enum KakaoAuthConfig {
 enum NaverAuthConfig {
     // TODO: 직접 해야 하는 부분 10:
     // 네이버 개발자센터에서 발급받은 앱 이름, Client ID, Client Secret, URL Scheme을 넣어주세요.
-    static let appName = "nanji_app"
+    static let appName = "자리난지"
     static let clientID = "E5bs2wNdybFlfgqvNTW8"
     static let clientSecret = "xLQbapdqa3"
     static let urlScheme = "nanjiappnaverlogin"

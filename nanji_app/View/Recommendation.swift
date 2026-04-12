@@ -10,9 +10,9 @@ struct RecommendationView: View {
                 .bold()
             
             VStack(alignment: .leading, spacing: 12) {
-                Text("추천 방문 시간: \(vm.recommendedTime)")
-                Text("혼잡 예상 시간: \(vm.busyTime)")
-                Text("여유 예상 시간: \(vm.freeTime)")
+                Text("추천 방문 시간: \(vm.recommendedTime.isEmpty ? "데이터 준비 중" : vm.recommendedTime)")
+                Text("혼잡 예상 시간: \(vm.busyTime.isEmpty ? "데이터 준비 중" : vm.busyTime)")
+                Text("여유 예상 시간: \(vm.freeTime.isEmpty ? "데이터 준비 중" : vm.freeTime)")
             }
             .font(.headline)
             .padding()

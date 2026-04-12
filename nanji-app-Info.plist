@@ -2,6 +2,10 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>CFBundleDisplayName</key>
+	<string>자리난지</string>
+	<key>CFBundleName</key>
+	<string>자리난지</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
@@ -30,5 +34,7 @@
 		<string>kakaokompassauth</string>
 		<string>kakaolink</string>
 	</array>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>현재 위치를 바탕으로 대체 주차장까지의 거리와 예상 이동 시간을 계산하기 위해 위치 정보가 필요합니다.</string>
 </dict>
 </plist>

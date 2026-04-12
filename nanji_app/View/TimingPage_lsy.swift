@@ -1,36 +1,35 @@
 import SwiftUI
 
-struct TimingOption: Identifiable {
-    let id = UUID()
-    let time: String
-    let departure: String
-    let arrival: String
-    let available: Int
-    let status: Status
-    let message: String
-    let traffic: String
-
-    enum Status {
-        case best
-        case good
-        case caution
-        case avoid
-    }
-}
-
 struct TimingPage: View {
-    private let timingOptions: [TimingOption] = [
-        TimingOption(time: "지금 출발", departure: "14:00", arrival: "14:15", available: 42, status: .good, message: "주차 가능해요", traffic: "원활"),
-        TimingOption(time: "30분 후 출발", departure: "14:30", arrival: "14:45", available: 35, status: .caution, message: "조금 붐빌 수 있어요", traffic: "보통"),
-        TimingOption(time: "1시간 후 출발", departure: "15:00", arrival: "15:15", available: 28, status: .caution, message: "자리가 많지 않아요", traffic: "보통"),
-        TimingOption(time: "2시간 후 출발", departure: "16:00", arrival: "16:15", available: 15, status: .avoid, message: "주차 어려워요", traffic: "혼잡"),
-        TimingOption(time: "3시간 후 출발", departure: "17:00", arrival: "17:15", available: 8, status: .avoid, message: "피크타임 - 피하세요", traffic: "매우 혼잡")
-    ]
+    @ObservedObject var vm: ParkingViewModel
+
+    private var summaryCards: [TimingInsightCard] {
+        [
+            TimingInsightCard(
+                title: "추천 출발 시간",
+                timeText: vm.recommendedTime.isEmpty ? "데이터 준비 중" : vm.recommendedTime,
+                message: "가장 여유로운 시간대로 안내합니다.",
+                status: .best
+            ),
+            TimingInsightCard(
+                title: "혼잡 예상 시간",
+                timeText: vm.busyTime.isEmpty ? "데이터 준비 중" : vm.busyTime,
+                message: "이 시간대는 혼잡할 가능성이 높아요.",
+                status: .avoid
+            ),
+            TimingInsightCard(
+                title: "여유 예상 시간",
+                timeText: vm.freeTime.isEmpty ? "데이터 준비 중" : vm.freeTime,
+                message: "비교적 편하게 주차할 수 있는 시간대예요.",
+                status: .good
+            )
+        ]
+    }
 
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Text("한강공원 주차장")
+                Text("자리난지")
                     .font(.title3)
                     .fontWeight(.semibold)
                     .foregroundColor(.white)
@@ -56,7 +55,7 @@ struct TimingPage: View {
                                 .font(.headline)
                         }
 
-                        Text("언제 출발하면 주차하기 좋을까요?")
+                        Text("언제 출발하면 더 편할지 안내해드려요.")
                             .font(.subheadline)
                             .foregroundColor(.gray)
                     }
@@ -67,14 +66,14 @@ struct TimingPage: View {
                     .shadow(radius: 3)
 
                     HStack(alignment: .top, spacing: 12) {
-                        Image(systemName: "chart.line.uptrend.xyaxis")
+                        Image(systemName: "sparkles")
                             .foregroundColor(Color(hex: "#7DD3FC"))
 
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("추천 시간")
+                            Text("지금 추천")
                                 .fontWeight(.semibold)
 
-                            Text("지금 출발하시면 주차하기 좋아요!")
+                            Text(vm.recommendedTime.isEmpty ? "추천 시간을 준비하고 있어요." : "\(vm.recommendedTime)에 맞춰 움직이면 더 수월해요.")
                                 .font(.subheadline)
                                 .foregroundColor(.gray)
                         }
@@ -90,17 +89,25 @@ struct TimingPage: View {
                     )
                     .cornerRadius(12)
 
-                    VStack(spacing: 12) {
-                        ForEach(timingOptions) { option in
-                            TimingCard(option: option)
+                    if !vm.departureTimingOptions.isEmpty {
+                        VStack(spacing: 12) {
+                            ForEach(vm.departureTimingOptions) { option in
+                                DepartureTimingCard(option: option)
+                            }
+                        }
+                    } else {
+                        VStack(spacing: 12) {
+                            ForEach(summaryCards) { card in
+                                TimingCard(card: card)
+                            }
                         }
                     }
 
                     HStack(alignment: .top, spacing: 12) {
-                        Image(systemName: "exclamationmark.circle")
+                        Image(systemName: "info.circle")
                             .foregroundColor(Color(hex: "#7DD3FC"))
 
-                        Text("실시간 교통 상황과 과거 데이터를 분석하여 최적의 출발 시간을 추천해드립니다.")
+                        Text("현재는 난지 메인 주차장 기준으로 추천 시간을 안내하고 있어요.")
                             .font(.subheadline)
                             .foregroundColor(.gray)
                     }
@@ -119,14 +126,32 @@ struct TimingPage: View {
             .background(Color(.systemGroupedBackground))
         }
         .background(Color(.systemGroupedBackground).ignoresSafeArea())
+        .onAppear {
+            vm.loadPrediction()
+            vm.loadDepartureTimingOptions()
+        }
     }
 }
 
-struct TimingCard: View {
-    let option: TimingOption
+private struct TimingInsightCard: Identifiable {
+    let id = UUID()
+    let title: String
+    let timeText: String
+    let message: String
+    let status: Status
+
+    enum Status {
+        case best
+        case good
+        case avoid
+    }
+}
+
+private struct TimingCard: View {
+    let card: TimingInsightCard
 
     var body: some View {
-        let style = getStyle(option.status)
+        let style = styleFor(card.status)
 
         VStack(alignment: .leading, spacing: 12) {
             HStack {
@@ -137,10 +162,73 @@ struct TimingCard: View {
                         .foregroundColor(.white)
                         .clipShape(Circle())
 
-                    VStack(alignment: .leading) {
-                        Text(option.time)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(card.title)
                             .fontWeight(.bold)
+                        Text(card.message)
+                            .font(.subheadline)
+                            .foregroundColor(style.text)
+                    }
+                }
 
+                Spacer()
+
+                VStack(alignment: .trailing, spacing: 4) {
+                    Text(card.timeText)
+                        .font(.headline)
+                        .fontWeight(.bold)
+                    Text("예상 시간")
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                }
+            }
+        }
+        .padding()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(style.bg)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(style.border, lineWidth: 2)
+        )
+        .cornerRadius(12)
+    }
+
+    private func styleFor(_ status: TimingInsightCard.Status) -> (
+        bg: Color,
+        border: Color,
+        text: Color,
+        badge: Color,
+        icon: String
+    ) {
+        switch status {
+        case .best:
+            return (Color.green.opacity(0.12), Color.green.opacity(0.3), .green, .green, "✓")
+        case .good:
+            return (Color.blue.opacity(0.10), Color.blue.opacity(0.25), .blue, .blue, "○")
+        case .avoid:
+            return (Color.red.opacity(0.10), Color.red.opacity(0.25), .red, .red, "!")
+        }
+    }
+}
+
+private struct DepartureTimingCard: View {
+    let option: DepartureTimingOption
+
+    var body: some View {
+        let style = styleFor(option.statusText)
+
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                HStack(spacing: 12) {
+                    Text(style.icon)
+                        .frame(width: 40, height: 40)
+                        .background(style.badge)
+                        .foregroundColor(.white)
+                        .clipShape(Circle())
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(option.title)
+                            .fontWeight(.bold)
                         Text(option.message)
                             .font(.subheadline)
                             .foregroundColor(style.text)
@@ -149,8 +237,8 @@ struct TimingCard: View {
 
                 Spacer()
 
-                VStack {
-                    Text("\(option.available)")
+                VStack(alignment: .trailing, spacing: 4) {
+                    Text("\(option.availableSpaces)")
                         .font(.title2)
                         .fontWeight(.bold)
                     Text("예상 자리")
@@ -167,7 +255,7 @@ struct TimingCard: View {
                         Text("출발")
                             .font(.caption)
                             .foregroundColor(.gray)
-                        Text(option.departure)
+                        Text(option.departureTimeText)
                             .fontWeight(.semibold)
                     }
 
@@ -178,7 +266,7 @@ struct TimingCard: View {
                         Text("도착")
                             .font(.caption)
                             .foregroundColor(.gray)
-                        Text(option.arrival)
+                        Text(option.arrivalTimeText)
                             .fontWeight(.semibold)
                     }
                 }
@@ -186,10 +274,10 @@ struct TimingCard: View {
                 Spacer()
 
                 VStack {
-                    Text("교통")
+                    Text("상태")
                         .font(.caption)
                         .foregroundColor(.gray)
-                    Text(option.traffic)
+                    Text(option.statusText)
                         .font(.caption)
                         .foregroundColor(style.text)
                 }
@@ -205,7 +293,7 @@ struct TimingCard: View {
         .cornerRadius(12)
     }
 
-    func getStyle(_ status: TimingOption.Status) -> (
+    private func styleFor(_ status: String) -> (
         bg: Color,
         border: Color,
         text: Color,
@@ -213,14 +301,14 @@ struct TimingCard: View {
         icon: String
     ) {
         switch status {
-        case .best:
-            return (.green, .green, .white, .green, "✓")
-        case .good:
-            return (Color.green.opacity(0.1), Color.green.opacity(0.3), .green, .green, "✓")
-        case .caution:
-            return (Color.yellow.opacity(0.2), Color.yellow.opacity(0.5), .orange, .orange, "!")
-        case .avoid:
-            return (Color.red.opacity(0.1), Color.red.opacity(0.3), .red, .red, "✕")
+        case "여유":
+            return (Color.green.opacity(0.12), Color.green.opacity(0.3), .green, .green, "✓")
+        case "보통":
+            return (Color.blue.opacity(0.10), Color.blue.opacity(0.25), .blue, .blue, "○")
+        case "혼잡", "매우 혼잡":
+            return (Color.red.opacity(0.10), Color.red.opacity(0.25), .red, .red, "!")
+        default:
+            return (Color.gray.opacity(0.10), Color.gray.opacity(0.25), .gray, .gray, "·")
         }
     }
 }
@@ -246,5 +334,5 @@ private extension Color {
 }
 
 #Preview {
-    TimingPage()
+    TimingPage(vm: ParkingViewModel())
 }
