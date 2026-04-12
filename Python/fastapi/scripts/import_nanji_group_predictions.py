@@ -81,6 +81,15 @@ def classify_congestion(occupancy_rate: float) -> str:
     return "full"
 
 
+def clamp_occupied(value: float, total_spaces: int) -> int:
+    rounded = round(value)
+    if rounded < 0:
+        return 0
+    if total_spaces > 0 and rounded > total_spaces:
+        return total_spaces
+    return rounded
+
+
 def main() -> None:
     args = get_args()
     csv_path = Path(args.csv)
@@ -120,47 +129,75 @@ def main() -> None:
 
         with csv_path.open("r", encoding="utf-8", newline="") as file:
             reader = csv.DictReader(file)
-            for index, row in enumerate(reader, start=1):
-                if row["parking_group"] != args.parking_group:
-                    continue
+            source_rows = [row for row in reader if row["parking_group"] == args.parking_group]
 
-                base_time = datetime.strptime(row["base_time"], "%Y-%m-%d %H:%M:%S")
-                predicted_time = datetime.strptime(row["predicted_time"], "%Y-%m-%d %H:%M:%S")
-                estimated_active_cars = float(row["estimated_active_cars"])
-                occupied_spaces = max(0, round(estimated_active_cars))
-                available_spaces = max(0, parking_lot.p_total_spaces - occupied_spaces)
-                occupancy_rate = 0 if parking_lot.p_total_spaces == 0 else round((occupied_spaces / parking_lot.p_total_spaces) * 100, 2)
-                confidence_score = None if not row["confidence_score"] else float(row["confidence_score"])
-                model_version = row["model_version"] or None
-                horizon_minutes = int(row["prediction_horizon_minutes"])
+        source_rows.sort(
+            key=lambda row: (
+                row["base_time"],
+                row["predicted_time"],
+                row.get("model_version", "") or "",
+            )
+        )
 
-                key = (base_time, predicted_time, model_version)
-                if key in existing_keys:
-                    skipped += 1
-                    continue
+        cumulative_by_base_time: dict[tuple[str, str | None], float] = {}
 
-                prediction = ParkingPrediction(
-                    pp_parking_lot_id=parking_lot.p_id,
-                    pp_base_time=base_time,
-                    pp_predicted_time=predicted_time,
-                    pp_prediction_horizon_minutes=horizon_minutes,
-                    pp_predicted_occupied_spaces=occupied_spaces,
-                    pp_predicted_available_spaces=available_spaces,
-                    pp_predicted_occupancy_rate=occupancy_rate,
-                    pp_predicted_congestion_level=classify_congestion(occupancy_rate),
-                    pp_confidence_score=confidence_score,
-                    pp_model_version=model_version,
-                    pp_created_at=datetime.now(),
-                )
-                db.add(prediction)
-                existing_keys.add(key)
-                inserted += 1
+        for index, row in enumerate(source_rows, start=1):
+            base_time = datetime.strptime(row["base_time"], "%Y-%m-%d %H:%M:%S")
+            predicted_time = datetime.strptime(row["predicted_time"], "%Y-%m-%d %H:%M:%S")
+            confidence_score = None if not row.get("confidence_score") else float(row["confidence_score"])
+            model_version = row.get("model_version") or None
+            horizon_minutes = int(row["prediction_horizon_minutes"])
 
-                if index % 1000 == 0:
-                    print(
-                        f"progress processed={index} inserted={inserted} skipped={skipped}",
-                        flush=True,
+            key = (base_time, predicted_time, model_version)
+            if key in existing_keys:
+                skipped += 1
+                continue
+
+            if row.get("predicted_delta") not in (None, ""):
+                cumulative_key = (row["base_time"], model_version)
+                if cumulative_key not in cumulative_by_base_time:
+                    base_occupied_raw = row.get("base_occupied_spaces")
+                    if base_occupied_raw in (None, ""):
+                        raise ValueError(
+                            "변화량 기반 CSV를 적재하려면 각 row에 `base_occupied_spaces`가 필요합니다."
+                        )
+                    cumulative_by_base_time[cumulative_key] = float(base_occupied_raw)
+
+                cumulative_by_base_time[cumulative_key] += float(row["predicted_delta"])
+                occupied_spaces = clamp_occupied(cumulative_by_base_time[cumulative_key], parking_lot.p_total_spaces)
+            else:
+                estimated_active_cars = row.get("estimated_active_cars")
+                if estimated_active_cars in (None, ""):
+                    raise ValueError(
+                        "절대값 기반 CSV를 적재하려면 `estimated_active_cars` 컬럼이 필요합니다."
                     )
+                occupied_spaces = clamp_occupied(float(estimated_active_cars), parking_lot.p_total_spaces)
+
+            available_spaces = max(0, parking_lot.p_total_spaces - occupied_spaces)
+            occupancy_rate = 0 if parking_lot.p_total_spaces == 0 else round((occupied_spaces / parking_lot.p_total_spaces) * 100, 2)
+
+            prediction = ParkingPrediction(
+                pp_parking_lot_id=parking_lot.p_id,
+                pp_base_time=base_time,
+                pp_predicted_time=predicted_time,
+                pp_prediction_horizon_minutes=horizon_minutes,
+                pp_predicted_occupied_spaces=occupied_spaces,
+                pp_predicted_available_spaces=available_spaces,
+                pp_predicted_occupancy_rate=occupancy_rate,
+                pp_predicted_congestion_level=classify_congestion(occupancy_rate),
+                pp_confidence_score=confidence_score,
+                pp_model_version=model_version,
+                pp_created_at=datetime.now(),
+            )
+            db.add(prediction)
+            existing_keys.add(key)
+            inserted += 1
+
+            if index % 1000 == 0:
+                print(
+                    f"progress processed={index} inserted={inserted} skipped={skipped}",
+                    flush=True,
+                )
 
         if args.dry_run:
             db.rollback()

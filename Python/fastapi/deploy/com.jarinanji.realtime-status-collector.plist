@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>com.jarinanji.realtime-status-collector</string>
+
+	<key>ProgramArguments</key>
+	<array>
+		<string>/Users/electrozone/Documents/GitHub/nanji_app/Python/fastapi/.venv/bin/python</string>
+		<string>/Users/electrozone/Documents/GitHub/nanji_app/Python/fastapi/scripts/collect_nanji_realtime_status.py</string>
+	</array>
+
+	<key>WorkingDirectory</key>
+	<string>/Users/electrozone/Documents/GitHub/nanji_app/Python/fastapi</string>
+
+	<key>StartInterval</key>
+	<integer>600</integer>
+
+	<key>RunAtLoad</key>
+	<true/>
+
+	<key>StandardOutPath</key>
+	<string>/tmp/jarinanji_realtime_status.log</string>
+
+	<key>StandardErrorPath</key>
+	<string>/tmp/jarinanji_realtime_status.error.log</string>
+</dict>
+</plist>

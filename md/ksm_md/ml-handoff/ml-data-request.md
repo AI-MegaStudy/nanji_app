@@ -59,17 +59,26 @@
 
 ### 3. 예측 결과 포맷
 - FastAPI와 DB에 넣으려면 예측 결과 형식을 미리 확정해야 한다.
-- 아래 항목들을 요청한다.
+- 현재 모델 타깃이 `절대 점유 대수`가 아니라 `전 시간 대비 변화량`으로 바뀌었으므로, 반입 포맷도 그 기준으로 다시 맞춰야 한다.
 
 필수 요청 항목
 - `예측 기준 시각`
 - `예측 대상 시각`
-- `예측 남은 자리 수`
-- `예측 점유 대수`
-- `예측 점유율`
-- `예측 혼잡도`
+- `prediction_horizon_minutes`
+- `predicted_delta`
 - `신뢰도 점수`
 - `모델 버전`
+
+설명
+- `predicted_delta`
+  - 전 시간 대비 점유 차량 수 변화량
+- FastAPI에서는 이 둘을 이용해 절대 점유 대수로 복원한 뒤 기존 앱/웹 필드로 변환한다.
+
+현재 기준
+- `base_occupied_spaces`는 우선 `hmw/Data/processed/nanji_hourly_model_dataset_2020_2026_update.csv`의
+  `realtime_current_parking`을 사용해 복원한다.
+- 따라서 ML 산출물에 `base_occupied_spaces`가 꼭 포함되지 않아도 되지만,
+  포함해주면 서버에서 그 값을 우선 사용한다.
 
 현재 DB 대응 테이블
 - `parking_prediction`
@@ -87,6 +96,11 @@
 - `pp_model_version`
 
 즉, 머신러닝 담당자에게는 최소한 위 컬럼에 매핑 가능한 결과를 달라고 요청해야 한다.
+다만 앱/웹은 기존 절대값 필드를 유지하므로, ML 출력이 변화량이라도 서버에서 아래 필드를 다시 만들어야 한다.
+- `pp_predicted_occupied_spaces`
+- `pp_predicted_available_spaces`
+- `pp_predicted_occupancy_rate`
+- `pp_predicted_congestion_level`
 
 ### 4. 출발 타이밍 추천 산출 기준
 - 단순 예측값만으로 끝나지 않고, 앱에서는 “언제 출발하면 좋은지”까지 보여줘야 한다.
@@ -194,7 +208,8 @@
 
 ### 예측 결과 관련
 - 예측 결과를 어떤 형식으로 반환하는가?
-- 예측 시각별로 남은 자리 수와 점유율을 같이 줄 수 있는가?
+- 변화량 기준이라면 `predicted_delta`를 어떤 컬럼명으로 전달하는가?
+- 필요하면 `base_occupied_spaces`도 함께 줄 수 있는가?
 - 혼잡도 상태값도 같이 줄 수 있는가?
 - 신뢰도 점수를 줄 수 있는가?
 
@@ -230,6 +245,24 @@
 ## 백엔드에서 바로 쓰기 좋은 출력 예시
 
 ### 예측 결과 예시
+```json
+{
+  "parking_lot_id": 1,
+  "base_time": "2026-04-12T14:00:00",
+  "predictions": [
+    {
+      "predicted_time": "2026-04-12T15:00:00",
+      "prediction_horizon_minutes": 60,
+      "predicted_delta": 15,
+      "base_occupied_spaces": 67,
+      "confidence_score": 0.87,
+      "model_version": "v1.0.0"
+    }
+  ]
+}
+```
+
+### 서버 후처리 후 앱/웹 응답 예시
 ```json
 {
   "parking_lot_id": 1,

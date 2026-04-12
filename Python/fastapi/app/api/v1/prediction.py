@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
@@ -12,9 +13,25 @@ router = APIRouter(prefix="/predictions", tags=["predictions"])
 def get_predictions_by_parking_lot(parking_lot_id: int, limit: int = 24, db: Session = Depends(get_db)) -> ParkingPredictionListResponse:
     safe_limit = max(1, min(limit, 168))
 
-    predictions = (
-        db.query(ParkingPrediction)
+    latest_version_row = (
+        db.query(
+            ParkingPrediction.pp_model_version.label("model_version"),
+            func.max(ParkingPrediction.pp_id).label("latest_pp_id"),
+        )
         .filter(ParkingPrediction.pp_parking_lot_id == parking_lot_id)
+        .group_by(ParkingPrediction.pp_model_version)
+        .order_by(func.max(ParkingPrediction.pp_id).desc())
+        .first()
+    )
+
+    latest_model_version = latest_version_row.model_version if latest_version_row is not None else None
+
+    prediction_query = db.query(ParkingPrediction).filter(ParkingPrediction.pp_parking_lot_id == parking_lot_id)
+    if latest_version_row is not None:
+        prediction_query = prediction_query.filter(ParkingPrediction.pp_model_version == latest_model_version)
+
+    predictions = (
+        prediction_query
         .order_by(ParkingPrediction.pp_predicted_time.asc())
         .limit(safe_limit)
         .all()
