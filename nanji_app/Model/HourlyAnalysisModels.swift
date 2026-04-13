@@ -18,6 +18,18 @@ struct HourlyAnalysisRequest: Codable {
         windGusts10m: 4.8,
         totalCapacity: 800
     )
+
+    static var live: HourlyAnalysisRequest {
+        HourlyAnalysisRequest(
+            parkingZone: "nanji",
+            targetTime: HourlyAnalysisDateFormatter.apiISOText(from: Date()),
+            temperature2m: 0,
+            relativeHumidity2m: 0,
+            weatherCode: 0,
+            windGusts10m: 0,
+            totalCapacity: nil
+        )
+    }
 }
 
 struct HourlyAnalysisResponse: Codable {
@@ -56,6 +68,7 @@ struct HourlyAnalysisPoint: Codable, Identifiable {
     let predictedCongestionPercent: Double?
     let predictedAvailableSpaces: Int?
     let isPrediction: Bool
+    var date: Date? = nil
 
     enum CodingKeys: String, CodingKey {
         case time
@@ -63,6 +76,22 @@ struct HourlyAnalysisPoint: Codable, Identifiable {
         case predictedCongestionPercent
         case predictedAvailableSpaces
         case isPrediction
+    }
+
+    init(
+        time: String,
+        predictedActiveCars: Double,
+        predictedCongestionPercent: Double?,
+        predictedAvailableSpaces: Int?,
+        isPrediction: Bool,
+        date: Date? = nil
+    ) {
+        self.time = time
+        self.predictedActiveCars = predictedActiveCars
+        self.predictedCongestionPercent = predictedCongestionPercent
+        self.predictedAvailableSpaces = predictedAvailableSpaces
+        self.isPrediction = isPrediction
+        self.date = date
     }
 
     var occupancyValue: Int {
@@ -131,5 +160,9 @@ enum HourlyAnalysisDateFormatter {
 
     static func hourText(from date: Date) -> String {
         hourFormatter.string(from: date)
+    }
+
+    static func apiISOText(from date: Date) -> String {
+        fallbackFormatter.string(from: date)
     }
 }

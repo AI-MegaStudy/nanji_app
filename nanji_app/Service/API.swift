@@ -72,12 +72,11 @@ final class APIService {
                 let item = response.item
                 let occupiedSpaces = item?.psOccupiedSpaces ?? 0
                 let availableSpaces = item?.psAvailableSpaces ?? 0
-                let totalSpaces = occupiedSpaces + availableSpaces
                 let status = ParkingStatus(
                     parkingName: response.parkingLotName,
                     availableSpaces: availableSpaces,
                     occupiedSpaces: occupiedSpaces,
-                    totalSpaces: totalSpaces,
+                    totalSpaces: response.totalSpaces,
                     congestionLevel: Self.localizedCongestion(response.item?.psCongestionLevel),
                     hasData: response.hasData,
                     message: response.message
@@ -90,7 +89,7 @@ final class APIService {
     }
     
     func fetchPrediction(completion: @escaping (Result<PredictionResponse, Error>) -> Void) {
-        fetchPredictionList { result in
+        fetchPredictionList(targetDate: Date()) { result in
             do {
                 let response = try result.get()
                 let sortedItems = response.items.sorted { $0.ppPredictedTime < $1.ppPredictedTime }
@@ -161,7 +160,7 @@ final class APIService {
         }
 
         group.enter()
-        fetchPredictionList { result in
+        fetchPredictionList(targetDate: Date()) { result in
             predictionListResult = result
             group.leave()
         }
@@ -608,12 +607,30 @@ final class APIService {
     private static let predictionDateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "ko_KR")
+        formatter.timeZone = TimeZone(identifier: "Asia/Seoul")
         formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
         return formatter
     }()
 
-    private func fetchPredictionList(completion: @escaping (Result<ParkingPredictionListResponse, Error>) -> Void) {
-        guard let url = URL(string: "\(baseURL)/api/v1/predictions/\(targetParkingLotID)") else { return }
+    private static let apiDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(identifier: "Asia/Seoul")
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter
+    }()
+
+    private func fetchPredictionList(
+        targetDate: Date? = nil,
+        completion: @escaping (Result<ParkingPredictionListResponse, Error>) -> Void
+    ) {
+        guard var components = URLComponents(string: "\(baseURL)/api/v1/predictions/\(targetParkingLotID)") else { return }
+        if let targetDate {
+            components.queryItems = [
+                URLQueryItem(name: "target_date", value: Self.apiDateFormatter.string(from: targetDate))
+            ]
+        }
+        guard let url = components.url else { return }
 
         URLSession.shared.dataTask(with: url) { data, _, error in
             if let error = error {

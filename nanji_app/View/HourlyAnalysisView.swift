@@ -378,7 +378,7 @@ struct HourlyAnalysisView: View {
         errorMessage = nil
 
         do {
-            let fetched = try await apiClient.fetchHourlyAnalysis(request: .sample)
+            let fetched = try await apiClient.fetchHourlyAnalysis(request: HourlyAnalysisRequest.live)
             analysis = fetched
             selectedPointID = fetched.hourlyData.first(where: { $0.isPrediction })?.id ?? fetched.hourlyData.first?.id
         } catch {

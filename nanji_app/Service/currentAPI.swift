@@ -13,6 +13,7 @@ struct DepartureTimingOption: Identifiable, Equatable {
 struct CurrentParkingStatusResponse: Codable, Equatable {
     let parkingLotID: Int
     let parkingLotName: String
+    let totalSpaces: Int
     let supportsRealtimeCongestion: Bool
     let hasData: Bool
     let item: CurrentParkingStatusItem?
@@ -21,10 +22,27 @@ struct CurrentParkingStatusResponse: Codable, Equatable {
     enum CodingKeys: String, CodingKey {
         case parkingLotID = "parking_lot_id"
         case parkingLotName = "parking_lot_name"
+        case totalSpaces = "total_spaces"
         case supportsRealtimeCongestion = "supports_realtime_congestion"
         case hasData = "has_data"
         case item
         case message
+    }
+}
+
+struct ParkingStatusHistoryResponse: Codable, Equatable {
+    let parkingLotID: Int
+    let parkingLotName: String
+    let targetDate: String
+    let count: Int
+    let items: [CurrentParkingStatusItem]
+
+    enum CodingKeys: String, CodingKey {
+        case parkingLotID = "parking_lot_id"
+        case parkingLotName = "parking_lot_name"
+        case targetDate = "target_date"
+        case count
+        case items
     }
 }
 

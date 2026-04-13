@@ -1,3 +1,5 @@
+from datetime import date, datetime, time, timedelta
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
@@ -6,11 +8,13 @@ from app.models.parking import ParkingLot, ParkingStatusLog
 from app.schemas.parking import (
     ParkingCurrentStatusItem,
     ParkingCurrentStatusResponse,
+    ParkingStatusHistoryResponse,
     ParkingLotItem,
     ParkingLotListResponse,
 )
 
 router = APIRouter(prefix="/parking", tags=["parking"])
+CURRENT_STATUS_MAX_AGE = timedelta(minutes=30)
 
 
 @router.get("/lots", response_model=ParkingLotListResponse)
@@ -53,7 +57,10 @@ def get_current_parking_status(parking_lot_id: int, db: Session = Depends(get_db
 
     latest_status = (
         db.query(ParkingStatusLog)
-        .filter(ParkingStatusLog.ps_parking_lot_id == parking_lot_id)
+        .filter(
+            ParkingStatusLog.ps_parking_lot_id == parking_lot_id,
+            ParkingStatusLog.ps_source_type != "manual_test",
+        )
         .order_by(ParkingStatusLog.ps_recorded_at.desc(), ParkingStatusLog.ps_id.desc())
         .first()
     )
@@ -62,14 +69,26 @@ def get_current_parking_status(parking_lot_id: int, db: Session = Depends(get_db
         return ParkingCurrentStatusResponse(
             parking_lot_id=parking_lot.p_id,
             parking_lot_name=parking_lot.p_display_name,
+            total_spaces=int(parking_lot.p_total_spaces),
             supports_realtime_congestion=parking_lot.p_supports_realtime_congestion,
             has_data=False,
             message="현재 실시간 주차 현황 데이터가 없습니다.",
         )
 
+    if datetime.now() - latest_status.ps_recorded_at > CURRENT_STATUS_MAX_AGE:
+        return ParkingCurrentStatusResponse(
+            parking_lot_id=parking_lot.p_id,
+            parking_lot_name=parking_lot.p_display_name,
+            total_spaces=latest_status.ps_occupied_spaces + latest_status.ps_available_spaces,
+            supports_realtime_congestion=parking_lot.p_supports_realtime_congestion,
+            has_data=False,
+            message="실시간 주차 현황이 오래되어 현재는 표시하지 않습니다.",
+        )
+
     return ParkingCurrentStatusResponse(
         parking_lot_id=parking_lot.p_id,
         parking_lot_name=parking_lot.p_display_name,
+        total_spaces=latest_status.ps_occupied_spaces + latest_status.ps_available_spaces,
         supports_realtime_congestion=parking_lot.p_supports_realtime_congestion,
         has_data=True,
         item=ParkingCurrentStatusItem(
@@ -82,4 +101,53 @@ def get_current_parking_status(parking_lot_id: int, db: Session = Depends(get_db
             ps_congestion_level=latest_status.ps_congestion_level,
             ps_source_type=latest_status.ps_source_type,
         ),
+    )
+
+
+@router.get("/history/{parking_lot_id}", response_model=ParkingStatusHistoryResponse)
+def get_parking_status_history(
+    parking_lot_id: int,
+    target_date: date | None = None,
+    db: Session = Depends(get_db),
+) -> ParkingStatusHistoryResponse:
+    parking_lot = db.query(ParkingLot).filter(ParkingLot.p_id == parking_lot_id).first()
+    if parking_lot is None:
+        raise HTTPException(status_code=404, detail=f"parking_lot not found: {parking_lot_id}")
+
+    effective_date = target_date or datetime.now().date()
+    day_start = datetime.combine(effective_date, time.min)
+    next_day_start = day_start + timedelta(days=1)
+
+    status_logs = (
+        db.query(ParkingStatusLog)
+        .filter(
+            ParkingStatusLog.ps_parking_lot_id == parking_lot_id,
+            ParkingStatusLog.ps_recorded_at >= day_start,
+            ParkingStatusLog.ps_recorded_at < next_day_start,
+        )
+        .order_by(ParkingStatusLog.ps_recorded_at.asc(), ParkingStatusLog.ps_id.asc())
+        .all()
+    )
+
+    items = []
+    for status in status_logs:
+        items.append(
+            ParkingCurrentStatusItem(
+                ps_id=status.ps_id,
+                ps_parking_lot_id=status.ps_parking_lot_id,
+                ps_recorded_at=status.ps_recorded_at.strftime("%Y-%m-%d %H:%M:%S"),
+                ps_occupied_spaces=status.ps_occupied_spaces,
+                ps_available_spaces=status.ps_available_spaces,
+                ps_occupancy_rate=status.ps_occupancy_rate,
+                ps_congestion_level=status.ps_congestion_level,
+                ps_source_type=status.ps_source_type,
+            )
+        )
+
+    return ParkingStatusHistoryResponse(
+        parking_lot_id=parking_lot.p_id,
+        parking_lot_name=parking_lot.p_display_name,
+        target_date=effective_date.isoformat(),
+        count=len(items),
+        items=items,
     )

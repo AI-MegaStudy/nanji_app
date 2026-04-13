@@ -4,6 +4,7 @@
 from app.schemas.parking import (
     ParkingCurrentStatusItem,
     ParkingCurrentStatusResponse,
+    ParkingStatusHistoryResponse,
     ParkingLotItem,
     ParkingLotListResponse,
 )
@@ -12,6 +13,7 @@ from app.schemas.prediction import ParkingPredictionItem, ParkingPredictionListR
 __all__ = [
     "ParkingCurrentStatusItem",
     "ParkingCurrentStatusResponse",
+    "ParkingStatusHistoryResponse",
     "ParkingLotItem",
     "ParkingLotListResponse",
     "ParkingPredictionItem",
