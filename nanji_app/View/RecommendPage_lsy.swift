@@ -2,6 +2,7 @@ import SwiftUI
 import MapKit
 import CoreLocation
 import Combine
+import UserNotifications
 
 struct RecommendPage: View {
     let parkingLots: [ParkingLotAPIItem]
@@ -17,6 +18,13 @@ struct RecommendPage: View {
     )
     @State private var routeInfoByLotID: [Int: AlternativeRouteInfo] = [:]
     @State private var statusByLotID: [Int: ParkingStatus] = [:]
+    
+    @State private var notifyWhenSelectedBecomesAvailable: Bool = true
+    @State private var notifyWhenNearSelectedLot: Bool = true
+    @State private var lowAvailabilityThreshold: Double = 0.1 // 10%
+    @State private var lastNotifiedNearLotID: Int?
+    @State private var lastETAByLotID: [Int: Int] = [:]
+    @State private var lastHasDataByLotID: [Int: Bool] = [:]
 
     private var displayLots: [AlternativeParkingLotItem] {
         let mapped = parkingLots.enumerated().map { index, lot in
@@ -76,9 +84,9 @@ struct RecommendPage: View {
     }
 
     private var selectedLot: AlternativeParkingLotItem? {
-        let fallbackID = displayLots.first?.id
-        let targetID = selectedLotID ?? fallbackID
-        return displayLots.first { $0.id == targetID }
+        let id = selectedLotID ?? displayLots.first?.id
+        guard let id else { return nil }
+        return displayLots.first { $0.id == id }
     }
 
     var body: some View {
@@ -98,6 +106,39 @@ struct RecommendPage: View {
                 Color(hex: "#7DD3FC")
                     .ignoresSafeArea(edges: .top)
             )
+            
+            VStack(alignment: .leading, spacing: 8) {
+                Toggle("혼잡 → 여유 알림", isOn: $notifyWhenSelectedBecomesAvailable)
+                    .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#7DD3FC")))
+                Toggle("주차장 근접 알림", isOn: $notifyWhenNearSelectedLot)
+                    .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#7DD3FC")))
+                HStack {
+                    Text("여유 임계치")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Slider(value: $lowAvailabilityThreshold, in: 0.05...0.5, step: 0.05)
+                    Text("\(Int(lowAvailabilityThreshold * 100))%")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                        .frame(width: 36, alignment: .trailing)
+                }
+                Button {
+                    let name = selectedLot?.name ?? "주차장"
+                    NotificationManager.shared.scheduleNotification(
+                        id: "test_notification",
+                        title: "알림 테스트",
+                        body: "\(name) 알림이 정상 동작합니다."
+                    )
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "bell.badge")
+                        Text("알림 테스트 보내기")
+                    }
+                    .font(.footnote)
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 8)
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 16) {
@@ -161,6 +202,7 @@ struct RecommendPage: View {
         }
         .background(Color(.systemGroupedBackground).ignoresSafeArea())
         .onAppear {
+            NotificationManager.shared.requestAuthorization()
             locationManager.requestWhenInUseAuthorization()
             locationManager.startUpdatingLocation()
             loadAlternativeStatuses()
@@ -172,11 +214,107 @@ struct RecommendPage: View {
         .onReceive(locationManager.$currentLocation.compactMap { $0 }) { location in
             updateRouteInfo(from: normalizedOriginLocation(location))
         }
+        .onChange(of: statusByLotID) { oldValue, newValue in
+            guard notifyWhenSelectedBecomesAvailable, let selectedID = selectedLotID ?? displayLots.first?.id else { return }
+            let oldStatus = oldValue[selectedID]
+            let newStatus = newValue[selectedID]
+            // Only notify when transitioning to available ("여유") from non-available and when we have current data
+            if let newStatus, newStatus.hasData, newStatus.congestionLevel == "여유" {
+                let wasAvailable = (oldStatus?.congestionLevel == "여유")
+                if !wasAvailable {
+                    let lotName = displayLots.first(where: { $0.id == selectedID })?.name ?? "주차장"
+                    NotificationManager.shared.scheduleNotification(
+                        id: "lot_available_\(selectedID)",
+                        title: "주차 가능해요",
+                        body: "\(lotName)이(가) 지금 여유 상태입니다."
+                    )
+                }
+            }
+            // Low availability threshold alert
+            if let selected = selectedLot, let status = newStatus, status.hasData {
+                let total = max(status.totalSpaces, 1)
+                let ratio = Double(status.availableSpaces) / Double(total)
+                let threshold = lowAvailabilityThreshold
+                let wasLow = {
+                    if let old = oldStatus, old.hasData {
+                        let ot = max(old.totalSpaces, 1)
+                        return Double(old.availableSpaces) / Double(ot) <= threshold
+                    }
+                    return false
+                }()
+                if ratio <= threshold, !wasLow {
+                    NotificationManager.shared.scheduleNotification(
+                        id: "lot_low_\(selected.id)",
+                        title: "자리 빠르게 줄고 있어요",
+                        body: "\(selected.name) 남은 자리가 임계치(\(Int(threshold*100))%) 이하입니다."
+                    )
+                }
+            }
+
+            // Data availability lost/restored
+            if let selectedID = selectedLotID ?? displayLots.first?.id {
+                let oldHas = oldStatus?.hasData ?? false
+                let newHas = newStatus?.hasData ?? false
+                if oldHas != newHas {
+                    if newHas {
+                        NotificationManager.shared.scheduleNotification(
+                            id: "lot_data_restored_\(selectedID)",
+                            title: "실시간 정보 복구",
+                            body: "선택한 주차장의 실시간 정보가 다시 제공됩니다."
+                        )
+                    } else {
+                        NotificationManager.shared.scheduleNotification(
+                            id: "lot_data_lost_\(selectedID)",
+                            title: "실시간 정보 없음",
+                            body: "선택한 주차장의 실시간 정보가 일시 중단되었습니다."
+                        )
+                    }
+                }
+            }
+        }
+        .onChange(of: routeInfoByLotID) { oldValue, newValue in
+            guard let selectedID = selectedLotID ?? displayLots.first?.id,
+                  let newETA = newValue[selectedID]?.travelMinutes else { return }
+            let oldETA = oldValue[selectedID]?.travelMinutes ?? lastETAByLotID[selectedID]
+            lastETAByLotID[selectedID] = newETA
+            if let oldETA, newETA - oldETA >= 5 {
+                let name = displayLots.first(where: { $0.id == selectedID })?.name ?? "주차장"
+                NotificationManager.shared.scheduleNotification(
+                    id: "lot_eta_spike_\(selectedID)",
+                    title: "예상 소요시간 증가",
+                    body: "\(name)까지 예상 시간이 \(newETA - oldETA)분 늘어났어요."
+                )
+            }
+        }
+        .onReceive(locationManager.$currentLocation.compactMap { $0 }) { location in
+            guard notifyWhenNearSelectedLot, let selected = selectedLot else { return }
+            let userCoord = location.coordinate
+            let current = CLLocation(latitude: userCoord.latitude, longitude: userCoord.longitude)
+            let destCoord = selected.coordinate
+            let dest = CLLocation(latitude: destCoord.latitude, longitude: destCoord.longitude)
+            let distance = current.distance(from: dest)
+            if distance <= 1000 {
+                if lastNotifiedNearLotID != selected.id {
+                    lastNotifiedNearLotID = selected.id
+                    let meters = Int(distance)
+                    NotificationManager.shared.scheduleProximityNotification(
+                        id: "lot_near_\(selected.id)",
+                        title: "주차장 근처에 도착",
+                        body: "\(selected.name)까지 약 \(meters)m 남았어요."
+                    )
+                }
+            } else if lastNotifiedNearLotID == selected.id {
+                // moved away; allow future notification again when re-entering
+                lastNotifiedNearLotID = nil
+            }
+        }
         .navigationBarBackButtonHidden(false)
     }
 
     private func focus(on lot: AlternativeParkingLotItem, animated: Bool = true) {
         selectedLotID = lot.id
+        
+        NotificationManager.shared.cancelNotification(id: "lot_near_\(lot.id)")
 
         let nextPosition = MapCameraPosition.region(
             MKCoordinateRegion(
