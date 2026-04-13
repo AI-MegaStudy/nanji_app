@@ -465,9 +465,28 @@ final class APIService {
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
-        guard let httpResponse = response as? HTTPURLResponse,
-              200..<300 ~= httpResponse.statusCode else {
+        guard let httpResponse = response as? HTTPURLResponse else {
             throw URLError(.badServerResponse)
+        }
+
+        guard 200..<300 ~= httpResponse.statusCode else {
+            let body = String(data: data, encoding: .utf8) ?? "empty"
+            print("소셜 로그인 연동 응답 실패 [\(httpResponse.statusCode)]: \(body)")
+
+            if let payload = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let detail = payload["detail"] as? String {
+                throw NSError(
+                    domain: "APIService",
+                    code: httpResponse.statusCode,
+                    userInfo: [NSLocalizedDescriptionKey: detail]
+                )
+            }
+
+            throw NSError(
+                domain: "APIService",
+                code: httpResponse.statusCode,
+                userInfo: [NSLocalizedDescriptionKey: "계정 연동 요청이 실패했습니다."]
+            )
         }
 
         let decoded = try JSONDecoder().decode(SocialLoginAPIResponse.self, from: data)

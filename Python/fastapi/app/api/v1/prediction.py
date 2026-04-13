@@ -1,4 +1,5 @@
 from datetime import date, datetime, time, timedelta
+from typing import Optional
 
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
@@ -51,7 +52,7 @@ def _load_saved_predictions(
 @router.get("/{parking_lot_id}", response_model=ParkingPredictionListResponse)
 def get_predictions_by_parking_lot(
     parking_lot_id: int,
-    target_date: date | None = None,
+    target_date: Optional[date] = None,
     limit: int = 168,
     db: Session = Depends(get_db),
 ) -> ParkingPredictionListResponse:

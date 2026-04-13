@@ -5,6 +5,7 @@ import json
 from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
+from typing import Optional
 
 
 SOURCE_CSV = Path("/Users/electrozone/Documents/GitHub/nanji_work/hmw/Note/nanji_outputs_change/nanji_test_predictions.csv")
@@ -27,7 +28,7 @@ class ServicePredictionRow:
     source_file: str
 
 
-def _pick_first(source_row: dict[str, str], *keys: str) -> str | None:
+def _pick_first(source_row: dict[str, str], *keys: str) -> Optional[str]:
     for key in keys:
         value = source_row.get(key)
         if value is not None and str(value).strip() != "":

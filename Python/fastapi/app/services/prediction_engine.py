@@ -16,7 +16,7 @@ from app.models.parking import ParkingLot, ParkingStatusLog
 from app.schemas.prediction import ParkingPredictionItem
 
 
-NANJI_WORK_ROOT = Path("/Users/electrozone/Documents/nanji_work")
+NANJI_WORK_ROOT = Path("/Users/electrozone/Documents/GitHub/nanji_work")
 DATASET_PATH = NANJI_WORK_ROOT / "ksm/nanji_hourly_modeling/nanji_hourly_model_dataset_2020_2026.csv"
 WEATHER_DIR = NANJI_WORK_ROOT / "ose/Data"
 WEIGHT_TABLE_PATH = NANJI_WORK_ROOT / "hmw/Note/nanji_outputs_change/nanji_weight_table.csv"

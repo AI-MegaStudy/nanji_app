@@ -5,6 +5,7 @@ import csv
 import sys
 from datetime import datetime
 from pathlib import Path
+from typing import Optional, Tuple
 
 CURRENT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = CURRENT_DIR.parent
@@ -30,7 +31,7 @@ def get_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def find_or_create_group_lot(db, parking_group: str, create_if_missing: bool) -> ParkingLot | None:
+def find_or_create_group_lot(db, parking_group: str, create_if_missing: bool) -> Optional[ParkingLot]:
     parking_lot = (
         db.query(ParkingLot)
         .filter(
@@ -139,7 +140,7 @@ def main() -> None:
             )
         )
 
-        cumulative_by_base_time: dict[tuple[str, str | None], float] = {}
+        cumulative_by_base_time: dict[Tuple[str, Optional[str]], float] = {}
 
         for index, row in enumerate(source_rows, start=1):
             base_time = datetime.strptime(row["base_time"], "%Y-%m-%d %H:%M:%S")

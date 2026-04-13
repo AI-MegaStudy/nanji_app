@@ -1,4 +1,5 @@
 from datetime import date, datetime, time, timedelta
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -107,7 +108,7 @@ def get_current_parking_status(parking_lot_id: int, db: Session = Depends(get_db
 @router.get("/history/{parking_lot_id}", response_model=ParkingStatusHistoryResponse)
 def get_parking_status_history(
     parking_lot_id: int,
-    target_date: date | None = None,
+    target_date: Optional[date] = None,
     db: Session = Depends(get_db),
 ) -> ParkingStatusHistoryResponse:
     parking_lot = db.query(ParkingLot).filter(ParkingLot.p_id == parking_lot_id).first()
