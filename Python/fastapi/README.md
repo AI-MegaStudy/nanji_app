@@ -49,8 +49,9 @@ uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 - `GET /api/v1/predictions/{parking_lot_id}`
 
 ### 예측 API 동작 원칙
-- `GET /api/v1/predictions/{parking_lot_id}` 는 주차장별로 가장 최근에 적재된 `pp_model_version`만 반환한다.
-- 예전 테스트 적재본과 새 테스트 적재본이 같이 있어도, 기본 응답은 최신 반입 버전 기준으로 정리된다.
+- `GET /api/v1/predictions/{parking_lot_id}` 는 주차장별로 최신 예측 배치에서 하루치 예측만 반환한다.
+- `target_date=YYYY-MM-DD` 쿼리를 주면 해당 날짜 00:00~24:00 범위의 예측만 반환한다.
+- `target_date`를 주지 않으면 최신 예측이 속한 날짜를 기본으로 사용한다.
 - 현재 변화량 복원 반입본의 예시 `pp_model_version`
   - `weighted_delta_v1_test_import`
 
@@ -69,6 +70,10 @@ uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
   - 한강공원 통합주차포털 난지 페이지의 `주차가능대수`를 기준으로 `parking_status_log` 적재 내용을 미리 검증
 - `python scripts/collect_nanji_realtime_status.py`
   - 한강공원 통합주차포털의 `주차가능대수`, `주차구획수(계)`를 기준으로 실제 현재 상태 1건 적재
+- `python scripts/refresh_live_predictions.py --dry-run`
+  - 최신 실시간 상태를 기준으로 당일 남은 시간대 live 예측을 미리 검증
+- `python scripts/refresh_live_predictions.py`
+  - 최신 실시간 상태를 기준으로 당일 남은 시간대 예측을 `parking_prediction`에 갱신
 
 ## 실시간 기준 대수 수집
 - 목적
@@ -94,7 +99,7 @@ python scripts/collect_nanji_realtime_status.py
   - 이미 만들어진 과거 배치 예측의 `base_time`을 자동 복원해주지는 않는다.
   - 사이트 HTML 구조가 바뀌면 스크립트 파싱 로직도 함께 점검해야 한다.
 - 자동 실행
-  - 맥 개발 환경에서는 `launchd`로 10분 주기 자동 실행을 걸 수 있다.
+  - 맥 개발 환경에서는 `launchd`로 실시간 수집은 매시 정각, live 예측 갱신은 10분 주기로 자동 실행을 걸 수 있다.
   - 가이드와 템플릿은 아래 문서를 참고한다.
     - [realtime-collector-scheduler-guide.md](/Users/electrozone/Documents/GitHub/nanji_app/md/ksm_md/ml-handoff/realtime-collector-scheduler-guide.md)
 

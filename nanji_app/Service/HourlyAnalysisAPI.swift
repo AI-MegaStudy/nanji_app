@@ -6,14 +6,14 @@ struct HourlyAnalysisAPI {
     var parkingLotID: Int = 1
 
     func fetchHourlyAnalysis(request: HourlyAnalysisRequest = .sample) async throws -> HourlyAnalysisResponse {
-        let requestURL = baseURL.appendingPathComponent("api/v1/predictions/\(parkingLotID)")
-        let urlRequest = URLRequest(url: requestURL)
+        let targetDate = HourlyAnalysisDateFormatter.date(from: request.targetTime) ?? Date()
 
         do {
-            let (data, response) = try await session.data(for: urlRequest)
-            try validate(response: response)
-            let decoded = try decodePredictionList(data)
-            return buildHourlyAnalysis(from: decoded)
+            async let predictionResponse = fetchPredictionList(for: targetDate)
+            async let statusHistoryResponse = fetchStatusHistory(for: targetDate)
+            let predictions = try await predictionResponse
+            let statusHistory = try await statusHistoryResponse
+            return buildHourlyAnalysis(from: predictions, statusHistory: statusHistory)
         } catch {
             return try decode(Self.samplePayload)
         }
@@ -40,21 +40,17 @@ struct HourlyAnalysisAPI {
         return try decoder.decode(ParkingPredictionListResponse.self, from: data)
     }
 
-    private func buildHourlyAnalysis(from response: ParkingPredictionListResponse) -> HourlyAnalysisResponse {
-        let sortedItems = response.items.sorted { $0.ppPredictedTime < $1.ppPredictedTime }
-        let selectedItems = selectForecastWindow(from: sortedItems)
-        let syntheticDatesByID = syntheticTimelineByPredictionID(for: selectedItems)
+    private func decodeStatusHistory(_ data: Data) throws -> ParkingStatusHistoryResponse {
+        let decoder = JSONDecoder()
+        return try decoder.decode(ParkingStatusHistoryResponse.self, from: data)
+    }
 
-        let hourlyData = selectedItems.map { item in
-            let date = syntheticDatesByID[item.ppID] ?? Self.predictionDateFormatter.date(from: item.ppPredictedTime) ?? Date()
-            return HourlyAnalysisPoint(
-                time: HourlyAnalysisDateFormatter.hourText(from: date),
-                predictedActiveCars: Double(item.ppPredictedOccupiedSpaces),
-                predictedCongestionPercent: Double(item.ppPredictedOccupancyRate) ?? 0,
-                predictedAvailableSpaces: item.ppPredictedAvailableSpaces,
-                isPrediction: true
-            )
-        }
+    private func buildHourlyAnalysis(
+        from response: ParkingPredictionListResponse,
+        statusHistory: ParkingStatusHistoryResponse
+    ) -> HourlyAnalysisResponse {
+        let sortedItems = response.items.sorted { $0.ppPredictedTime < $1.ppPredictedTime }
+        let hourlyData = mergeTimeline(predictions: sortedItems, actuals: statusHistory.items)
 
         let peakItem = hourlyData.max { lhs, rhs in
             lhs.occupancyValue < rhs.occupancyValue
@@ -64,73 +60,114 @@ struct HourlyAnalysisAPI {
             lhs.availableSpacesValue < rhs.availableSpacesValue
         }
 
-        let firstItem = hourlyData.first
+        let firstFutureItem = hourlyData.first(where: { $0.isPrediction }) ?? hourlyData.last
 
         return HourlyAnalysisResponse(
-            parkingZone: "난지 메인 주차장",
-            targetTime: Self.isoOutputFormatter.string(from: syntheticDatesByID[selectedItems.first?.ppID ?? -1] ?? Date()),
+            parkingZone: statusHistory.parkingLotName,
+            targetTime: Self.isoOutputFormatter.string(from: firstFutureItem?.date ?? Date()),
             generatedAt: Self.isoOutputFormatter.string(from: Date()),
-            predictedActiveCars: firstItem?.predictedActiveCars ?? 0,
+            predictedActiveCars: firstFutureItem?.predictedActiveCars ?? 0,
             hourlyData: hourlyData,
             peakTime: peakItem?.time ?? "데이터 준비 중",
             recommendedTimeWindow: bestItem?.time ?? "데이터 준비 중",
             modelInfo: HourlyAnalysisModelInfo(
-                modelName: selectedItems.first?.ppModelVersion ?? "weighted_core_v1_test_import",
+                modelName: sortedItems.first?.ppModelVersion ?? "weighted_core_v1_test_import",
                 r2: 0.0,
                 rmse: 0.0,
                 mae: 0.0,
-                evaluatedOn: "prediction_import"
+                evaluatedOn: statusHistory.targetDate
             ),
-            predictedCongestionPercent: firstItem?.predictedCongestionPercent,
-            predictedAvailableSpaces: firstItem?.predictedAvailableSpaces
+            predictedCongestionPercent: firstFutureItem?.predictedCongestionPercent,
+            predictedAvailableSpaces: firstFutureItem?.predictedAvailableSpaces
         )
     }
 
-    private func selectForecastWindow(from items: [ParkingPredictionItem]) -> [ParkingPredictionItem] {
-        guard !items.isEmpty else { return [] }
-
-        let parsedItems = items.compactMap { item -> (ParkingPredictionItem, Date)? in
-            guard let date = Self.predictionDateFormatter.date(from: item.ppPredictedTime) else { return nil }
-            return (item, date)
+    private func mergeTimeline(
+        predictions: [ParkingPredictionItem],
+        actuals: [CurrentParkingStatusItem]
+    ) -> [HourlyAnalysisPoint] {
+        let calendar = Self.seoulCalendar
+        let currentHour = calendar.dateInterval(of: .hour, for: Date())?.start ?? Date()
+        let latestActualByHour = actuals.reduce(into: [Date: CurrentParkingStatusItem]()) { partialResult, item in
+            guard let recordedAt = Self.predictionDateFormatter.date(from: item.psRecordedAt),
+                  let hourStart = calendar.dateInterval(of: .hour, for: recordedAt)?.start else {
+                return
+            }
+            partialResult[hourStart] = item
+        }
+        let predictionByHour = predictions.reduce(into: [Date: ParkingPredictionItem]()) { partialResult, item in
+            guard let date = Self.predictionDateFormatter.date(from: item.ppPredictedTime),
+                  let hourStart = calendar.dateInterval(of: .hour, for: date)?.start else {
+                return
+            }
+            partialResult[hourStart] = item
         }
 
-        guard !parsedItems.isEmpty else {
-            return Array(items.prefix(24))
+        let allHours = Set(latestActualByHour.keys).union(predictionByHour.keys).sorted()
+
+        return allHours.compactMap { hourStart in
+            if hourStart <= currentHour, let actual = latestActualByHour[hourStart] {
+                return HourlyAnalysisPoint(
+                    time: HourlyAnalysisDateFormatter.hourText(from: hourStart),
+                    predictedActiveCars: Double(actual.psOccupiedSpaces),
+                    predictedCongestionPercent: Double(actual.psOccupancyRate) ?? 0,
+                    predictedAvailableSpaces: actual.psAvailableSpaces,
+                    isPrediction: false,
+                    date: hourStart
+                )
+            }
+
+            guard let item = predictionByHour[hourStart] else {
+                return nil
+            }
+
+            return HourlyAnalysisPoint(
+                time: HourlyAnalysisDateFormatter.hourText(from: hourStart),
+                predictedActiveCars: Double(item.ppPredictedOccupiedSpaces),
+                predictedCongestionPercent: Double(item.ppPredictedOccupancyRate) ?? 0,
+                predictedAvailableSpaces: item.ppPredictedAvailableSpaces,
+                isPrediction: true,
+                date: hourStart
+            )
         }
-
-        let now = Date()
-
-        if let futureIndex = parsedItems.firstIndex(where: { $0.1 >= now }) {
-            return Array(parsedItems[futureIndex..<min(futureIndex + 24, parsedItems.count)]).map(\.0)
-        }
-
-        let nextHour = (Calendar.current.component(.hour, from: now) + 1) % 24
-        if let nearestByHourIndex = parsedItems.firstIndex(where: {
-            Calendar.current.component(.hour, from: $0.1) >= nextHour
-        }) {
-            return Array(parsedItems[nearestByHourIndex..<min(nearestByHourIndex + 24, parsedItems.count)]).map(\.0)
-        }
-
-        return Array(parsedItems.prefix(24)).map(\.0)
     }
 
-    private func syntheticTimelineByPredictionID(for items: [ParkingPredictionItem]) -> [Int: Date] {
-        guard !items.isEmpty else { return [:] }
+    private func fetchPredictionList(for targetDate: Date) async throws -> ParkingPredictionListResponse {
+        guard var components = URLComponents(
+            url: baseURL.appendingPathComponent("api/v1/predictions/\(parkingLotID)"),
+            resolvingAgainstBaseURL: false
+        ) else {
+            throw URLError(.badURL)
+        }
+        components.queryItems = [
+            URLQueryItem(name: "target_date", value: Self.apiDateFormatter.string(from: targetDate))
+        ]
+        guard let url = components.url else {
+            throw URLError(.badURL)
+        }
 
-        let calendar = Calendar.current
-        let now = Date()
-        let startOfCurrentHour = calendar.date(
-            bySettingHour: calendar.component(.hour, from: now),
-            minute: 0,
-            second: 0,
-            of: now
-        ) ?? now
-        let firstDisplayDate = calendar.date(byAdding: .hour, value: 1, to: startOfCurrentHour) ?? now
+        let (data, response) = try await session.data(for: URLRequest(url: url))
+        try validate(response: response)
+        return try decodePredictionList(data)
+    }
 
-        return Dictionary(uniqueKeysWithValues: items.enumerated().map { index, item in
-            let displayDate = calendar.date(byAdding: .hour, value: index, to: firstDisplayDate) ?? firstDisplayDate
-            return (item.ppID, displayDate)
-        })
+    private func fetchStatusHistory(for targetDate: Date) async throws -> ParkingStatusHistoryResponse {
+        guard var components = URLComponents(
+            url: baseURL.appendingPathComponent("api/v1/parking/history/\(parkingLotID)"),
+            resolvingAgainstBaseURL: false
+        ) else {
+            throw URLError(.badURL)
+        }
+        components.queryItems = [
+            URLQueryItem(name: "target_date", value: Self.apiDateFormatter.string(from: targetDate))
+        ]
+        guard let url = components.url else {
+            throw URLError(.badURL)
+        }
+
+        let (data, response) = try await session.data(for: URLRequest(url: url))
+        try validate(response: response)
+        return try decodeStatusHistory(data)
     }
 }
 
@@ -203,8 +240,23 @@ extension HourlyAnalysisAPI {
     private static let predictionDateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "ko_KR")
+        formatter.timeZone = TimeZone(identifier: "Asia/Seoul")
         formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
         return formatter
+    }()
+
+    private static let apiDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(identifier: "Asia/Seoul")
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter
+    }()
+
+    private static let seoulCalendar: Calendar = {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "Asia/Seoul") ?? .current
+        return calendar
     }()
 
     private static let isoOutputFormatter: ISO8601DateFormatter = {

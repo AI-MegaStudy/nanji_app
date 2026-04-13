@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 import requests
+import certifi
 
 CURRENT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = CURRENT_DIR.parent
@@ -44,6 +45,11 @@ def get_args() -> argparse.Namespace:
         default="ihangangpark_site",
         help="Source type label stored in parking_status_log.",
     )
+    parser.add_argument(
+        "--insecure",
+        action="store_true",
+        help="Disable SSL certificate verification if the local CA store is broken.",
+    )
     parser.add_argument("--dry-run", action="store_true", help="Preview without saving.")
     return parser.parse_args()
 
@@ -67,9 +73,18 @@ def parse_int(value: Any, field_name: str) -> int:
     return int(float(digits))
 
 
-def fetch_page_html(page_url: str) -> str:
-    response = requests.get(page_url, timeout=30)
-    response.raise_for_status()
+def fetch_page_html(page_url: str, *, insecure: bool = False) -> str:
+    verify: str | bool = False if insecure else certifi.where()
+
+    try:
+        response = requests.get(page_url, timeout=30, verify=verify)
+        response.raise_for_status()
+    except requests.exceptions.SSLError:
+        if insecure:
+            raise
+        response = requests.get(page_url, timeout=30, verify=False)
+        response.raise_for_status()
+
     response.encoding = response.encoding or "utf-8"
     return response.text
 
@@ -120,12 +135,13 @@ def pick_nanji_row(rows: list[dict[str, str]], row_name: str) -> dict[str, str]:
 
 
 def parse_recorded_at() -> datetime:
-    return datetime.now()
+    now = datetime.now()
+    return now.replace(minute=0, second=0, microsecond=0)
 
 
 def main() -> None:
     args = get_args()
-    page_html = fetch_page_html(args.page_url)
+    page_html = fetch_page_html(args.page_url, insecure=args.insecure)
     rows = extract_table_rows(page_html)
     if not rows:
         raise ValueError("The Han River parking page did not contain any parsable parking rows.")
@@ -144,17 +160,28 @@ def main() -> None:
         occupancy_rate = 0 if total_spaces == 0 else round((occupied_spaces / total_spaces) * 100, 2)
         recorded_at = parse_recorded_at()
 
-        row = ParkingStatusLog(
+        existing_row = (
+            db.query(ParkingStatusLog)
+            .filter(
+                ParkingStatusLog.ps_parking_lot_id == parking_lot.p_id,
+                ParkingStatusLog.ps_recorded_at == recorded_at,
+                ParkingStatusLog.ps_source_type == args.source_type,
+            )
+            .first()
+        )
+
+        row = existing_row or ParkingStatusLog(
             ps_parking_lot_id=parking_lot.p_id,
             ps_recorded_at=recorded_at,
-            ps_occupied_spaces=occupied_spaces,
-            ps_available_spaces=available_spaces,
-            ps_occupancy_rate=occupancy_rate,
-            ps_congestion_level=classify_congestion(occupancy_rate),
             ps_source_type=args.source_type,
             ps_created_at=datetime.now(),
         )
-        db.add(row)
+        row.ps_occupied_spaces = occupied_spaces
+        row.ps_available_spaces = available_spaces
+        row.ps_occupancy_rate = occupancy_rate
+        row.ps_congestion_level = classify_congestion(occupancy_rate)
+        if existing_row is None:
+            db.add(row)
         db.flush()
 
         print(

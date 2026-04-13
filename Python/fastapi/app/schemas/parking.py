@@ -48,7 +48,16 @@ class ParkingCurrentStatusItem(BaseModel):
 class ParkingCurrentStatusResponse(BaseModel):
     parking_lot_id: int
     parking_lot_name: str
+    total_spaces: int
     supports_realtime_congestion: bool
     has_data: bool
     item: Optional[ParkingCurrentStatusItem] = None
     message: Optional[str] = None
+
+
+class ParkingStatusHistoryResponse(BaseModel):
+    parking_lot_id: int
+    parking_lot_name: str
+    target_date: str
+    count: int
+    items: list[ParkingCurrentStatusItem]
