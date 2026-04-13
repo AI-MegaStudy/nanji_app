@@ -15,7 +15,6 @@ from app.schemas.parking import (
 )
 
 router = APIRouter(prefix="/parking", tags=["parking"])
-CURRENT_STATUS_MAX_AGE = timedelta(minutes=30)
 
 
 @router.get("/lots", response_model=ParkingLotListResponse)
@@ -74,16 +73,6 @@ def get_current_parking_status(parking_lot_id: int, db: Session = Depends(get_db
             supports_realtime_congestion=parking_lot.p_supports_realtime_congestion,
             has_data=False,
             message="현재 실시간 주차 현황 데이터가 없습니다.",
-        )
-
-    if datetime.now() - latest_status.ps_recorded_at > CURRENT_STATUS_MAX_AGE:
-        return ParkingCurrentStatusResponse(
-            parking_lot_id=parking_lot.p_id,
-            parking_lot_name=parking_lot.p_display_name,
-            total_spaces=latest_status.ps_occupied_spaces + latest_status.ps_available_spaces,
-            supports_realtime_congestion=parking_lot.p_supports_realtime_congestion,
-            has_data=False,
-            message="실시간 주차 현황이 오래되어 현재는 표시하지 않습니다.",
         )
 
     return ParkingCurrentStatusResponse(

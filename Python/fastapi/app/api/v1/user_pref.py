@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, Header, HTTPException
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
-from app.models.action_log import UserFavoriteParkingLot
+from app.models.action_log import UserActionLog, UserFavoriteParkingLot
 from app.models.notification import UserNotificationSetting
 from app.models.user import User
 from app.schemas.user_pref import (
@@ -18,6 +18,8 @@ from app.schemas.user_pref import (
     NotificationSettingListResponse,
     NotificationSettingUpsertRequest,
     NotificationSettingUpsertResponse,
+    UserActionLogCreateRequest,
+    UserActionLogCreateResponse,
 )
 
 router = APIRouter(prefix="/me", tags=["me"])
@@ -195,4 +197,37 @@ def upsert_my_notification_setting(
         parking_lot_id=payload.parking_lot_id,
         notification_type=payload.notification_type,
         is_enabled=payload.is_enabled,
+    )
+
+
+@router.post("/actions", response_model=UserActionLogCreateResponse)
+def create_my_action_log(
+    payload: UserActionLogCreateRequest,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> UserActionLogCreateResponse:
+    action_type = payload.action_type.strip()
+    if not action_type:
+        raise HTTPException(status_code=400, detail="action_type is required")
+
+    now = datetime.utcnow()
+    row = UserActionLog(
+        ual_user_id=user.u_id,
+        ual_parking_lot_id=payload.parking_lot_id,
+        ual_action_type=action_type,
+        ual_action_target=payload.action_target,
+        ual_action_value=payload.action_value,
+        ual_source_page=payload.source_page,
+        ual_session_id=payload.session_id,
+        ual_created_at=now,
+    )
+    db.add(row)
+    db.commit()
+
+    return UserActionLogCreateResponse(
+        user_id=user.u_id,
+        action_type=row.ual_action_type,
+        parking_lot_id=row.ual_parking_lot_id,
+        source_page=row.ual_source_page,
+        created_at=now.strftime("%Y-%m-%d %H:%M:%S"),
     )

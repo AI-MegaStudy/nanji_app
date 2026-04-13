@@ -194,7 +194,7 @@ def _build_parking_overview(
         occupied_spaces = int(latest_status.ps_occupied_spaces or 0)
         occupancy_rate = float(latest_status.ps_occupancy_rate or 0)
         congestion_level = latest_status.ps_congestion_level or "unknown"
-        has_realtime_data = (now - latest_status.ps_recorded_at) <= timedelta(minutes=30)
+        has_realtime_data = True
 
     return {
         "parking_lot_id": parking_lot.p_id,
@@ -333,7 +333,7 @@ def build_parking_analysis_overview(db: Session) -> Dict[str, Any]:
                 "occupied_spaces": int(status.ps_occupied_spaces or 0) if status is not None else 0,
                 "occupancy_rate": round(occupancy_rate, 2),
                 "status_label": "운영 중" if status is not None else "정보 준비 중",
-                "has_realtime_data": status is not None and (now - status.ps_recorded_at) <= timedelta(minutes=30),
+                "has_realtime_data": status is not None,
             }
         )
 

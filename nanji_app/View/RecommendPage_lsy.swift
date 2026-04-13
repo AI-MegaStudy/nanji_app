@@ -165,6 +165,12 @@ struct RecommendPage: View {
             locationManager.startUpdatingLocation()
             loadAlternativeStatuses()
             updateRouteInfo(from: normalizedOriginLocation(locationManager.currentLocation))
+            APIService.shared.logUserAction(
+                "map_view",
+                parkingLotID: selectedLotID ?? displayLots.first?.id ?? 1,
+                actionTarget: "alternative_parking_map",
+                sourcePage: "recommend"
+            )
             if let selectedLot {
                 focus(on: selectedLot, animated: false)
             }

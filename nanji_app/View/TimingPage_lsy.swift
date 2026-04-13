@@ -129,6 +129,12 @@ struct TimingPage: View {
         .onAppear {
             vm.loadPrediction()
             vm.loadDepartureTimingOptions()
+            APIService.shared.logUserAction(
+                "departure_timing_view",
+                parkingLotID: 1,
+                actionTarget: "timing_recommendation",
+                sourcePage: "timing"
+            )
         }
     }
 }

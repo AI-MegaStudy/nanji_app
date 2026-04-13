@@ -58,3 +58,20 @@ class NotificationSettingUpsertResponse(BaseModel):
     parking_lot_id: int
     notification_type: str
     is_enabled: bool
+
+
+class UserActionLogCreateRequest(BaseModel):
+    action_type: str
+    parking_lot_id: Optional[int] = None
+    action_target: Optional[str] = None
+    action_value: Optional[str] = None
+    source_page: Optional[str] = None
+    session_id: Optional[str] = None
+
+
+class UserActionLogCreateResponse(BaseModel):
+    user_id: int
+    action_type: str
+    parking_lot_id: Optional[int] = None
+    source_page: Optional[str] = None
+    created_at: str
