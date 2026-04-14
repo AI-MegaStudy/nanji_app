@@ -20,6 +20,24 @@ struct SocialLoginPayload: Encodable {
     }
 }
 
+struct UserActionLogPayload: Encodable {
+    let actionType: String
+    let parkingLotID: Int?
+    let actionTarget: String?
+    let actionValue: String?
+    let sourcePage: String?
+    let sessionID: String?
+
+    enum CodingKeys: String, CodingKey {
+        case actionType = "action_type"
+        case parkingLotID = "parking_lot_id"
+        case actionTarget = "action_target"
+        case actionValue = "action_value"
+        case sourcePage = "source_page"
+        case sessionID = "session_id"
+    }
+}
+
 final class APIService {
     static let shared = APIService()
     private init() {}
@@ -27,10 +45,20 @@ final class APIService {
     private let baseURL = "http://127.0.0.1:8000"
     private let targetParkingLotID = 1
     private let backendUserIDKey = "auth.backendUserID"
+    private let sessionIDKey = "analytics.sessionID"
 
     var currentBackendUserID: Int? {
         let value = UserDefaults.standard.integer(forKey: backendUserIDKey)
         return value > 0 ? value : nil
+    }
+
+    private var currentSessionID: String {
+        if let existing = UserDefaults.standard.string(forKey: sessionIDKey), !existing.isEmpty {
+            return existing
+        }
+        let newValue = UUID().uuidString
+        UserDefaults.standard.set(newValue, forKey: sessionIDKey)
+        return newValue
     }
 
     func setAuthenticatedUserID(_ userID: Int?) {
@@ -39,6 +67,46 @@ final class APIService {
         } else {
             UserDefaults.standard.removeObject(forKey: backendUserIDKey)
         }
+    }
+
+    func logUserAction(
+        _ actionType: String,
+        parkingLotID: Int? = nil,
+        actionTarget: String? = nil,
+        actionValue: String? = nil,
+        sourcePage: String? = nil
+    ) {
+        guard let url = URL(string: "\(baseURL)/api/v1/me/actions") else { return }
+        let request: URLRequest
+        do {
+            var authorized = try authorizedRequest(url: url, method: "POST")
+            authorized.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            authorized.httpBody = try JSONEncoder().encode(
+                UserActionLogPayload(
+                    actionType: actionType,
+                    parkingLotID: parkingLotID,
+                    actionTarget: actionTarget,
+                    actionValue: actionValue,
+                    sourcePage: sourcePage,
+                    sessionID: currentSessionID
+                )
+            )
+            request = authorized
+        } catch {
+            return
+        }
+
+        URLSession.shared.dataTask(with: request) { _, response, error in
+            if let error {
+                print("행동 로그 저장 실패: \(error.localizedDescription)")
+                return
+            }
+
+            guard let httpResponse = response as? HTTPURLResponse else { return }
+            if !(200..<300).contains(httpResponse.statusCode) {
+                print("행동 로그 저장 응답 실패 [\(httpResponse.statusCode)]")
+            }
+        }.resume()
     }
 
     private func authorizedRequest(url: URL, method: String = "GET") throws -> URLRequest {
@@ -352,6 +420,13 @@ final class APIService {
 
             do {
                 let response = try JSONDecoder().decode(FavoriteParkingLotToggleAPIResponse.self, from: data)
+                self.logUserAction(
+                    response.isFavorite ? "favorite_add" : "favorite_remove",
+                    parkingLotID: parkingLotID,
+                    actionTarget: "favorite",
+                    actionValue: response.isFavorite ? "enabled" : "disabled",
+                    sourcePage: "favorites"
+                )
                 completion(.success(response.isFavorite))
             } catch {
                 print("즐겨찾기 토글 디코딩 실패: \(String(data: data, encoding: .utf8) ?? "empty")")
@@ -445,6 +520,13 @@ final class APIService {
 
             do {
                 let response = try JSONDecoder().decode(NotificationSettingUpsertAPIResponse.self, from: data)
+                self.logUserAction(
+                    "notification_set",
+                    parkingLotID: parkingLotID,
+                    actionTarget: response.notificationType,
+                    actionValue: response.isEnabled ? "enabled" : "disabled",
+                    sourcePage: "favorites"
+                )
                 completion(.success(response.isEnabled))
             } catch {
                 print("알림 설정 저장 디코딩 실패: \(String(data: data, encoding: .utf8) ?? "empty")")
@@ -465,9 +547,28 @@ final class APIService {
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
-        guard let httpResponse = response as? HTTPURLResponse,
-              200..<300 ~= httpResponse.statusCode else {
+        guard let httpResponse = response as? HTTPURLResponse else {
             throw URLError(.badServerResponse)
+        }
+
+        guard 200..<300 ~= httpResponse.statusCode else {
+            let body = String(data: data, encoding: .utf8) ?? "empty"
+            print("소셜 로그인 연동 응답 실패 [\(httpResponse.statusCode)]: \(body)")
+
+            if let payload = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let detail = payload["detail"] as? String {
+                throw NSError(
+                    domain: "APIService",
+                    code: httpResponse.statusCode,
+                    userInfo: [NSLocalizedDescriptionKey: detail]
+                )
+            }
+
+            throw NSError(
+                domain: "APIService",
+                code: httpResponse.statusCode,
+                userInfo: [NSLocalizedDescriptionKey: "계정 연동 요청이 실패했습니다."]
+            )
         }
 
         let decoded = try JSONDecoder().decode(SocialLoginAPIResponse.self, from: data)

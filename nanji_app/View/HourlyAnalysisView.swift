@@ -23,6 +23,12 @@ struct HourlyAnalysisView: View {
         .navigationBarTitleDisplayMode(.inline)
         .task {
             if analysis == nil && !isLoading {
+                APIService.shared.logUserAction(
+                    "prediction_view",
+                    parkingLotID: 1,
+                    actionTarget: "hourly_analysis",
+                    sourcePage: "hourly_analysis"
+                )
                 await loadHourlyAnalysis()
             }
         }

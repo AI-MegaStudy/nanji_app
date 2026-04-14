@@ -74,7 +74,7 @@ def parse_int(value: Any, field_name: str) -> int:
 
 
 def fetch_page_html(page_url: str, *, insecure: bool = False) -> str:
-    verify: str | bool = False if insecure else certifi.where()
+    verify: Any = False if insecure else certifi.where()
 
     try:
         response = requests.get(page_url, timeout=30, verify=verify)
@@ -135,8 +135,7 @@ def pick_nanji_row(rows: list[dict[str, str]], row_name: str) -> dict[str, str]:
 
 
 def parse_recorded_at() -> datetime:
-    now = datetime.now()
-    return now.replace(minute=0, second=0, microsecond=0)
+    return datetime.now().replace(microsecond=0)
 
 
 def main() -> None:

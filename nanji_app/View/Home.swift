@@ -43,6 +43,18 @@ struct HomeView: View {
                 vm.loadCurrentStatus()
                 vm.loadPrediction()
                 vm.loadParkingLots()
+                APIService.shared.logUserAction(
+                    "congestion_view",
+                    parkingLotID: 1,
+                    actionTarget: "main_parking_status",
+                    sourcePage: "home"
+                )
+                APIService.shared.logUserAction(
+                    "prediction_view",
+                    parkingLotID: 1,
+                    actionTarget: "future_prediction",
+                    sourcePage: "home"
+                )
                 if !hideHomeDataNotice && !showDataNotice {
                     showDataNotice = true
                 }

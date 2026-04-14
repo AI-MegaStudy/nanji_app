@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
+from app.models.action_log import UserActionLog
 from app.models.user import User
 from app.schemas.auth import SocialLoginRequest, SocialLoginResponse
 
@@ -70,6 +71,19 @@ def upsert_social_login(
 
     db.commit()
     db.refresh(user)
+
+    login_log = UserActionLog(
+        ual_user_id=user.u_id,
+        ual_parking_lot_id=None,
+        ual_action_type="login",
+        ual_action_target=provider,
+        ual_action_value="success",
+        ual_source_page="login",
+        ual_session_id=None,
+        ual_created_at=now,
+    )
+    db.add(login_log)
+    db.commit()
 
     return SocialLoginResponse(
         user_id=user.u_id,

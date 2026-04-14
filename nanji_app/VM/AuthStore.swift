@@ -84,7 +84,8 @@ final class AuthStore: ObservableObject {
                 APIService.shared.setAuthenticatedUserID(nil)
                 backendUserID = nil
                 defaults.removeObject(forKey: backendUserIDKey)
-                errorMessage = "\(user.provider.title) 로그인은 되었지만 계정 연동 중 문제가 발생했습니다."
+                let detail = (error as NSError).localizedDescription
+                errorMessage = "\(user.provider.title) 로그인은 되었지만 계정 연동 중 문제가 발생했습니다.\n\(detail)"
             }
         } catch {
             errorMessage = AuthErrorMessageMapper.message(for: error, provider: provider)
