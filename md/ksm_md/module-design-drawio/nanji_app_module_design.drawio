@@ -1,0 +1,172 @@
+<mxfile host="app.diagrams.net" modified="2026-04-14T10:30:00.000Z" agent="Codex" version="24.7.17" type="device">
+  <diagram id="nanji-app-module-v2" name="NANJI_APP Module Design">
+    <mxGraphModel dx="1440" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="title" value="사용자 앱(iOS) : Module Design with SwiftUI + ObservableObject" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=26;fontStyle=1;fontColor=#111111;" vertex="1" parent="1">
+          <mxGeometry x="40" y="20" width="980" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="project" value="project" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=20;fontStyle=1;fontColor=#111111;" vertex="1" parent="1">
+          <mxGeometry x="1420" y="28" width="100" height="30" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="entryLabel" value="nanji_appApp.swift" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=14;fontStyle=1;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="108" y="120" width="150" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="entry" value="NanjiParkingApp&#xa;&#xa;- @StateObject authStore 생성&#xa;- LoginView에 environmentObject 주입&#xa;- 앱 시작 시 인증 상태를 루트에서 관리" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#111111;fontSize=15;fontStyle=1;align=left;spacingLeft=10;spacingTop=8;" vertex="1" parent="1">
+          <mxGeometry x="70" y="145" width="260" height="130" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="loginLabel" value="View/LoginView.swift" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=14;fontStyle=1;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="455" y="120" width="150" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="login" value="LoginView&#xa;&#xa;- 로그인 여부에 따라&#xa;  Login 화면 / MainTabView 분기&#xa;- Google, Kakao, Naver, Apple 로그인 버튼 제공&#xa;- 로그인 실패 메시지 상태 관리" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#111111;fontSize=15;fontStyle=1;align=left;spacingLeft=10;spacingTop=8;" vertex="1" parent="1">
+          <mxGeometry x="390" y="145" width="310" height="150" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="authStoreLabel" value="VM/AuthStore.swift" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=14;fontStyle=1;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="790" y="120" width="150" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="authStore" value="AuthStore : ObservableObject&#xa;&#xa;- 로그인 상태, 현재 사용자 정보 관리&#xa;- 소셜 로그인 서비스 호출&#xa;- APIService.shared.upsertSocialLogin 호출&#xa;- 앱 전역 인증 흐름 담당" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#111111;fontSize=15;fontStyle=1;align=left;spacingLeft=10;spacingTop=8;" vertex="1" parent="1">
+          <mxGeometry x="730" y="145" width="320" height="150" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="socialLabel" value="Service/SocialLoginServices/*" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=14;fontStyle=1;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="1135" y="120" width="220" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="social" value="Google / Kakao / Naver / Apple Service&#xa;&#xa;- 플랫폼 SDK 기반 로그인 수행&#xa;- provider_user_id, email, name 추출&#xa;- AuthStore에 결과 전달" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#111111;fontSize=15;fontStyle=1;align=left;spacingLeft=10;spacingTop=8;" vertex="1" parent="1">
+          <mxGeometry x="1080" y="145" width="300" height="130" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="mainTabLabel" value="View/LoginView.swift - MainTabView" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=14;fontStyle=1;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="585" y="365" width="220" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="mainTab" value="MainTabView&#xa;&#xa;- 대체주차장&#xa;- 출발타이밍&#xa;- 홈&#xa;- 즐겨찾기&#xa;- 마이페이지&#xa;5개 탭 구성" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#111111;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="560" y="390" width="210" height="140" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="homeLabel" value="View/Home.swift" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=14;fontStyle=1;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="60" y="615" width="130" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="home" value="HomeView&#xa;&#xa;- ParkingViewModel 사용&#xa;- 현재 주차 상태 조회&#xa;- 1시간 후 예측 조회&#xa;- 홈 진입 로그 적재" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#111111;fontSize=14;fontStyle=1;align=left;spacingLeft=10;spacingTop=8;" vertex="1" parent="1">
+          <mxGeometry x="40" y="640" width="250" height="135" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="recommendLabel" value="View/RecommendPage_lsy.swift" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=14;fontStyle=1;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="335" y="615" width="190" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="recommend" value="RecommendPage&#xa;&#xa;- 대체 주차장 목록/지도 표시&#xa;- LocationManager 사용&#xa;- 주차장 상태 조회 및 지도 클릭 로그 적재&#xa;- 경로/추천 정보 출력" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#111111;fontSize=14;fontStyle=1;align=left;spacingLeft=10;spacingTop=8;" vertex="1" parent="1">
+          <mxGeometry x="310" y="640" width="270" height="135" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="timingLabel" value="View/TimingPage_lsy.swift" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=14;fontStyle=1;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="650" y="615" width="170" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="timing" value="TimingPage&#xa;&#xa;- ParkingViewModel 관찰&#xa;- 출발 타이밍 추천 조회&#xa;- 예측 상태 요약 카드 표시&#xa;- departure_timing_view 로그 적재" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#111111;fontSize=14;fontStyle=1;align=left;spacingLeft=10;spacingTop=8;" vertex="1" parent="1">
+          <mxGeometry x="620" y="640" width="260" height="135" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="hourlyLabel" value="View/HourlyAnalysisView.swift" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=14;fontStyle=1;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="955" y="615" width="190" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="hourly" value="HourlyAnalysisView&#xa;&#xa;- 시간대별 예측 데이터 조회&#xa;- 피크 시간/추천 시간 계산&#xa;- HourlyAnalysisAPI 사용&#xa;- prediction_view 로그 적재" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#111111;fontSize=14;fontStyle=1;align=left;spacingLeft=10;spacingTop=8;" vertex="1" parent="1">
+          <mxGeometry x="920" y="640" width="260" height="135" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="favoritesLabel" value="View/FavoritesPage.swift" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=14;fontStyle=1;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="1245" y="615" width="180" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="favorites" value="FavoritesPage&#xa;&#xa;- 즐겨찾기 주차장 조회/추가/삭제&#xa;- 알림 설정 토글&#xa;- user_pref API 연동&#xa;- favorite, notification 로그 연계" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#111111;fontSize=14;fontStyle=1;align=left;spacingLeft=10;spacingTop=8;" vertex="1" parent="1">
+          <mxGeometry x="1210" y="640" width="260" height="135" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="mypageLabel" value="View/MyPage.swift" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=14;fontStyle=1;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="615" y="835" width="140" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="mypage" value="MyPageView&#xa;&#xa;- 현재 사용자 정보 표시&#xa;- 즐겨찾기/알림 상태 요약&#xa;- 로그아웃 및 계정 관련 UI 제공" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#111111;fontSize=14;fontStyle=1;align=left;spacingLeft=10;spacingTop=8;" vertex="1" parent="1">
+          <mxGeometry x="560" y="860" width="220" height="120" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="serviceLabel" value="Service Layer" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=14;fontStyle=1;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="1020" y="845" width="120" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="service" value="API.swift / currentAPI.swift / HourlyAnalysisAPI.swift&#xa;LocationManager.swift / Notification.swift&#xa;&#xa;- FastAPI 호출&#xa;- 실시간 상태, 예측, 즐겨찾기, 알림, 행동 로그 전송" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#111111;fontSize=14;fontStyle=1;align=left;spacingLeft=10;spacingTop=8;" vertex="1" parent="1">
+          <mxGeometry x="860" y="870" width="360" height="130" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="fastapiLabel" value="Python/fastapi" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=14;fontStyle=1;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="1280" y="845" width="120" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="fastapi" value="FastAPI Backend&#xa;&#xa;- /auth/social-login&#xa;- /parking/lots, /parking/current-status&#xa;- /predictions/*&#xa;- /me/favorites, /me/notifications, /me/actions" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#111111;fontSize=14;fontStyle=1;align=left;spacingLeft=10;spacingTop=8;" vertex="1" parent="1">
+          <mxGeometry x="1240" y="870" width="260" height="130" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="dbLabel" value="AWS RDS MySQL" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=14;fontStyle=1;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="1325" y="1070" width="130" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="db" value="Database&#xa;&#xa;user / user_action_log&#xa;user_favorite_parking_lot&#xa;user_notification_setting&#xa;parking_status_log / parking_prediction" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#111111;fontSize=14;fontStyle=1;align=left;spacingLeft=10;spacingTop=8;" vertex="1" parent="1">
+          <mxGeometry x="1240" y="1095" width="260" height="120" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="edge1" value="inject" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#111111;fontSize=13;" edge="1" parent="1" source="entry" target="login">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge2" value="observe" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#111111;fontSize=13;" edge="1" parent="1" source="login" target="authStore">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge3" value="call" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#111111;fontSize=13;" edge="1" parent="1" source="authStore" target="social">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge4" value="route" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#111111;fontSize=13;" edge="1" parent="1" source="login" target="mainTab">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge5" value="tab" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#111111;fontSize=13;" edge="1" parent="1" source="mainTab" target="home">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge6" value="tab" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#111111;fontSize=13;" edge="1" parent="1" source="mainTab" target="recommend">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge7" value="tab" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#111111;fontSize=13;" edge="1" parent="1" source="mainTab" target="timing">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge8" value="tab" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#111111;fontSize=13;" edge="1" parent="1" source="mainTab" target="hourly">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge9" value="tab" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#111111;fontSize=13;" edge="1" parent="1" source="mainTab" target="favorites">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge10" value="tab" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#111111;fontSize=13;" edge="1" parent="1" source="mainTab" target="mypage">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge11" value="API call" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#111111;fontSize=13;" edge="1" parent="1" source="home" target="service">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge12" value="API call" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#111111;fontSize=13;" edge="1" parent="1" source="recommend" target="service">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge13" value="API call" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#111111;fontSize=13;" edge="1" parent="1" source="timing" target="service">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge14" value="API call" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#111111;fontSize=13;" edge="1" parent="1" source="hourly" target="service">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge15" value="API call" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#111111;fontSize=13;" edge="1" parent="1" source="favorites" target="service">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge16" value="API call" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#111111;fontSize=13;" edge="1" parent="1" source="mypage" target="service">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge17" value="request" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#111111;fontSize=13;" edge="1" parent="1" source="authStore" target="fastapi">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge18" value="request" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#111111;fontSize=13;" edge="1" parent="1" source="service" target="fastapi">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge19" value="query" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#111111;fontSize=13;" edge="1" parent="1" source="fastapi" target="db">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
